@@ -171,6 +171,7 @@ jobs:
 
       - name: ✅ Evaluate coverage
         id: coverage-check
+        working-directory: ${{ steps.path.outputs.value }}
         run: |
           REPORT_STATUS="${{ steps.coverage.outputs.report }}"
           LINE=${{ steps.coverage.outputs.line }}
@@ -208,10 +209,11 @@ jobs:
         continue-on-error: true
         with:
           name: coverage-report
-          path: coverage/coverage-summary.normalized.json
+          path: ${{ steps.path.outputs.value }}/coverage/coverage-summary.normalized.json
 
       - name: 🧾 Job Summary
         if: always()
+        working-directory: ${{ steps.path.outputs.value }}
         run: |
           {
             echo "## 🧪 Quality Gate "

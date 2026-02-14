@@ -50,9 +50,9 @@ on:
         description: 'GitHub Token for private consumer repositories'
         required: false
 
-concurrency:
-  group: ci-quality-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   group: ci-quality-${{ github.ref }}
+#   cancel-in-progress: true
 
 jobs:
   quality:
@@ -91,6 +91,7 @@ jobs:
         id: path
         run: |
           PROJECT_PATH="$(resolve_project_path '${{ inputs.project_path }}')"
+          log "🔹 Using project path: $PROJECT_PATH"
           echo "value=$PROJECT_PATH" >> "$GITHUB_OUTPUT"
 
       - name: 👀 Files in workspace

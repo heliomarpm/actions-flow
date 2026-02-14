@@ -80,17 +80,17 @@ jobs:
           ref: main
           path: ${{ env.REUSABLE_PATH }}
 
-      - name: 👀 Files in workspace
-        working-directory: ${{ steps.path.outputs.value }}
-        run: |
-          ls_files
-
       - name: 📐 Resolve project path
         id: path
         run: |
           PROJECT_PATH="$(resolve_project_path '${{ inputs.project_path }}')"
           log "🔹 Using project path: $PROJECT_PATH"
           echo "value=$PROJECT_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: 👀 Files in workspace
+        working-directory: ${{ steps.path.outputs.value }}
+        run: |
+          ls_files
 
       - name: 🔍 Resolve project stack
         id: stack
@@ -163,6 +163,16 @@ jobs:
           log "Coverage status: $STATUS"
           log "Coverage line: $LINE"
           log "Coverage report: $FILE"
+
+      - name: 👀 Files in workspace
+        working-directory: ${{ steps.path.outputs.value }}/coverage
+        run: |
+          ls_files
+
+      - name: 👀 Files in workspace
+        working-directory: ${{ github.workspace }}/__coverage__
+        run: |
+          ls_files
 
       - name: ✅ Evaluate coverage
         id: eval-coverage

@@ -1,0 +1,229 @@
+name: CI - Quality Assurance
+
+on:
+  workflow_call:
+    inputs:
+      stack:
+        description: 'Stack the project. (node | php | dotnet | python | go | empty for auto-detect)'
+        required: false
+        type: string
+        default: null
+      project_path:
+        description: 'Project path source code'
+        required: false
+        type: string
+        default: "."
+      project_private:
+        description: 'Source repository is private. GH_TOKEN will be required if the repository is private.'
+        required: false
+        type: boolean
+        default: false
+
+      coverage_strategy:
+        description: 'Coverage strategy (custom | empty for auto-detect)'
+        required: false
+        type: string
+        default: "auto"
+      coverage_command:
+        description: 'Command to calculate coverage percentage'
+        required: false
+        type: string
+      min_coverage:
+        description: 'Minimum coverage percentage (0-100 | default: 80)'
+        type: number
+        required: false
+        default: 80
+      coverage_mode:
+        description: 'Coverage mode (info | block | decrease)'
+        type: string
+        required: false
+        default: "info"
+
+      coverage_continue_on_failure:
+        description: 'Continue pipeline even if tests fail. (default: true)'
+        required: false
+        type: boolean
+        default: true
+
+    secrets:
+      GH_TOKEN:
+        description: 'GitHub Token for private consumer repositories'
+        required: false
+
+concurrency:
+  group: ci-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    env:
+      REUSABLE_PATH: __reusable_flow__
+      BASH_ENV: ${{ github.workspace }}/__reusable_flow__/scripts/shared/shell-helpers.sh
+
+    steps:
+      - name: 📌 Checkout consumer repository (private)
+        if: ${{ inputs.project_private }}
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: 📌 Checkout consumer repository (public)
+        if: ${{ inputs.project_private == false }}
+        uses: actions/checkout@v4
+
+      - name: 📌 Checkout reusable-actions scripts
+        uses: actions/checkout@v4
+        with:
+          repository: heliomarpm/reusable-actions
+          ref: main
+          path: ${{ env.REUSABLE_PATH }}
+
+      - name: 📐 Resolve project path
+        id: path
+        run: |
+          PROJECT_PATH="$(resolve_project_path '${{ inputs.project_path }}')"
+          echo "value=$PROJECT_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: 🔍 Resolve project stack
+        id: stack
+        working-directory: ${{ steps.path.outputs.value }}
+        run: |
+          STACK="${{ inputs.stack }}"
+          if [[ -n "$STACK" ]]; then
+            echo "🔹 Using stack from input: $STACK"
+            echo "value=$STACK" >> $GITHUB_OUTPUT
+            echo "source=input" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          SCRIPT="$REUSABLE_PATH/scripts/shared/detect-stack.sh"
+          chmod +x "$SCRIPT"
+          STACK=$("$SCRIPT" "${{ steps.path.outputs.value }}")
+
+          echo "value=$STACK" >> $GITHUB_OUTPUT
+          echo "source=detected" >> $GITHUB_OUTPUT
+
+      - name: ❌ Fail if stack not detected
+        if: steps.stack.outputs.value == ''
+        run: fail "Stack not detected. Check project_path or repository structure."
+
+      - name: ▶️ Run unit tests
+        working-directory: ${{ steps.path.outputs.value }}
+        run: |
+          STACK="${{ steps.stack.outputs.value }}"
+          SCRIPT="$REUSABLE_PATH/scripts/plugins/$STACK/test.sh"
+          chmod +x "$SCRIPT"
+          "$SCRIPT"
+
+      - name: 📊 Run coverage tests
+        id: coverage
+        continue-on-error: ${{ inputs.coverage_continue_on_failure }}
+        working-directory: ${{ steps.path.outputs.value }}
+        env:
+          COVERAGE_STRATEGY: ${{ inputs.coverage_strategy }}
+          COVERAGE_COMMAND: ${{ inputs.coverage_command }}
+        run: |
+          STACK="${{ steps.stack.outputs.value }}"
+          SCRIPT="$REUSABLE_PATH/scripts/plugins/$STACK/coverage.sh"
+          chmod +x "$SCRIPT"
+
+          if "$SCRIPT"; then
+            STATUS="executed"
+          else
+            STATUS="failed"
+          fi
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+
+          FILE="coverage/coverage-summary.normalized.json"
+
+          if [[ -f "$FILE" ]]; then
+            LINE=$(jq '.line' "$FILE")
+            echo "line=$LINE" >> $GITHUB_OUTPUT
+
+            PCT=$(jq -r '.total.lines.pct // empty' "$FILE")
+            if [[ -n "$PCT" ]]; then
+              echo "pct=$PCT" >> $GITHUB_OUTPUT
+            fi
+
+            echo "report=found" >> $GITHUB_OUTPUT
+          else
+            echo "line=" >> $GITHUB_OUTPUT
+            echo "report=not-found" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ✅ Evaluate coverage
+        id: coverage-check
+        run: |
+          REPORT_STATUS="${{ steps.coverage.outputs.report }}"
+          LINE=${{ steps.coverage.outputs.line }}
+          MIN=${{ inputs.min-coverage }}
+          MODE="${{ inputs.coverage-mode }}"
+
+          log "Minimum coverage: $MIN%"
+          log "Coverage mode: $MODE"
+
+          FINAL_STATUS="passed"
+
+          if [ "$REPORT_STATUS" = "not-found" ]; then
+            FINAL_STATUS="missing"
+            echo "⚠️ No tests or coverage detected"
+
+            if [ "$MODE" = "block" ]; then
+              fail "Blocking PR: tests not implemented"
+            fi
+          elif awk "BEGIN {exit !($LINE < $MIN)}"; then
+            FINAL_STATUS="failed"
+            MSG="❌ Coverage below threshold ($LINE < $MIN)"
+
+            if [ "$MODE" = "block" ]; then
+              fail "$MSG"
+            fi
+
+            echo "$MSG"
+          fi
+
+          echo "status=$FINAL_STATUS" >> $GITHUB_OUTPUT
+
+      - name: 📦 Upload coverage artifact
+        if: steps.coverage.outputs.report != 'not-found'
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: coverage-report
+          path: coverage/coverage-summary.normalized.json
+
+      - name: 🧾 Job Summary
+        if: always()
+        run: |
+          {
+            echo "## 🧪 Quality Gate "
+            echo ""
+            echo "**📂 Project path:** \`${{ inputs.project_path || './'}}\`"
+            echo ""
+
+            if [[ "${{ steps.stack.outputs.value }}" != "" ]]; then
+              echo "**🧱 Stack:** \`${{ steps.stack.outputs.value }}\` (_${{ steps.stack.outputs.source }}_)"
+            else
+              echo "**🧱 Stack:** ❌ not detected"
+            fi
+
+            echo ""
+            if [[ "${{ steps.coverage.outputs.status }}" == "executed" ]]; then
+              if [[ -n "${{ steps.coverage.outputs.pct }}" ]]; then
+                echo "**📊 Coverage:** ${{ steps.coverage.outputs.pct }}%"
+              else
+                echo "**📊 Coverage:** executed (no summary produced)"
+              fi
+            elif [[ "${{ steps.coverage.outputs.status }}" == "failed" ]]; then
+              echo "**📊 Coverage:** failed"
+            else
+              echo "**📊 Coverage:** not executed"
+            fi
+
+            echo ""
+            if [[ -f coverage/coverage-summary.normalized.json ]]; then
+              echo "**📦 Artifacts:** coverage-report"
+            fi
+          } >> $GITHUB_STEP_SUMMARY

@@ -76,6 +76,7 @@ elif [ "$COVERAGE_STRATEGY" = "auto" ]; then
   fi
 
   log "Detected runner: $RUNNER"
+  # npm test -- --no-watch --coverage --reporter=verbose
 
   if [ "$RUNNER" = "vitest" ]; then
     npx vitest run --coverage --reporter=verbose

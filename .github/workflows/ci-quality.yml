@@ -158,16 +158,21 @@ jobs:
             LINE=$(jq '.line' "$FILE")
             echo "line=$LINE" >> $GITHUB_OUTPUT
 
-            PCT=$(jq -r '.total.lines.pct // empty' "$FILE")
-            if [[ -n "$PCT" ]]; then
-              echo "pct=$PCT" >> $GITHUB_OUTPUT
-            fi
+            # PCT=$(jq -r '.total.lines.pct // empty' "$FILE")
+            # if [[ -n "$PCT" ]]; then
+            #   echo "pct=$PCT" >> $GITHUB_OUTPUT
+            # fi
 
             echo "report=found" >> $GITHUB_OUTPUT
           else
             echo "line=" >> $GITHUB_OUTPUT
             echo "report=not-found" >> $GITHUB_OUTPUT
           fi
+
+          log "Coverage status: $STATUS"
+          log "Coverage line: $LINE"
+          # log "Coverage pct: $PCT"
+          log "Coverage report: $FILE"
 
       - name: ✅ Evaluate coverage
         id: coverage-check
@@ -237,8 +242,8 @@ jobs:
 
             echo ""
             if [[ "${{ steps.coverage.outputs.status }}" == "executed" ]]; then
-              if [[ -n "${{ steps.coverage.outputs.pct }}" ]]; then
-                echo "**📊 Coverage:** ${{ steps.coverage.outputs.pct }}%"
+              if [[ -n "${{ steps.coverage.outputs.lines }}" ]]; then
+                echo "**📊 Coverage:** ${{ steps.coverage.outputs.lines }}%"
               else
                 echo "**📊 Coverage:** executed (no summary produced)"
               fi

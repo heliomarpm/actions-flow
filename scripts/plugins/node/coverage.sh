@@ -3,11 +3,12 @@ set -euo pipefail
 
 echo "🚀 Node.js coverage plugin"
 
-RAW_FILE="coverage/coverage-summary.json"
-NORMALIZED_FILE="coverage/coverage-summary.normalized.json"
-
+REPO_ROOT="${REPO_ROOT:-$PWD}"
 COVERAGE_STRATEGY="${COVERAGE_STRATEGY:-auto}"
 COVERAGE_COMMAND="${COVERAGE_COMMAND:-}"
+
+RAW_FILE="coverage/coverage-summary.json"
+NORMALIZED_FILE="$REPO_ROOT/__coverage__/coverage-summary.normalized.json"
 
 log() { echo "→ $1"; }
 

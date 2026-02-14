@@ -242,8 +242,8 @@ jobs:
 
             echo ""
             if [[ "${{ steps.coverage.outputs.status }}" == "executed" ]]; then
-              if [[ -n "${{ steps.coverage.outputs.lines }}" ]]; then
-                echo "**📊 Coverage:** ${{ steps.coverage.outputs.lines }}%"
+              if [[ -n "${{ steps.coverage.outputs.line }}" ]]; then
+                echo "**📊 Coverage:** ${{ steps.coverage.outputs.line }}%"
               else
                 echo "**📊 Coverage:** executed (no summary produced)"
               fi

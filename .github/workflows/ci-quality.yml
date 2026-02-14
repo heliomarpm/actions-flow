@@ -28,7 +28,7 @@ on:
         description: 'Command to calculate coverage percentage'
         required: false
         type: string
-      min_coverage:
+      coverage_min:
         description: 'Minimum coverage percentage (0-100 | default: 80)'
         type: number
         required: false
@@ -175,8 +175,8 @@ jobs:
         run: |
           REPORT_STATUS="${{ steps.coverage.outputs.report }}"
           LINE=${{ steps.coverage.outputs.line }}
-          MIN=${{ inputs.min-coverage }}
-          MODE="${{ inputs.coverage-mode }}"
+          MIN=${{ inputs.coverage_min }}
+          MODE="${{ inputs.coverage_mode }}"
 
           log "Minimum coverage: $MIN%"
           log "Coverage mode: $MODE"

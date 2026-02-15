@@ -200,7 +200,9 @@ jobs:
           MODE="${{ inputs.coverage_mode }}"
           BASE_LINE=${{ steps.base-coverage.outputs.line || 0 }}
 
-          DELTA=$(echo "$LINE - $MIN" | bc -l)
+          # BELOW_MIN=$(awk "BEGIN {print ($LINE < $MIN)}")
+          BELOW_MIN=$(echo "$LINE < $MIN" | bc -l) # $(awk "BEGIN {exit !($LINE < $MIN)}")
+          DELTA=$(echo "$LINE - $BASE_LINE" | bc -l)
 
           if [ "$DELTA" -gt 0 ]; then
             DELTA_DISPLAY="📈 +$DELTA%"
@@ -209,10 +211,6 @@ jobs:
           else
             DELTA_DISPLAY="➖ 0%"
           fi
-
-          # BELOW_MIN=$(awk "BEGIN {print ($LINE < $MIN)}")
-          BELOW_MIN=$(echo "$LINE < $MIN" | bc -l) # $(awk "BEGIN {exit !($LINE < $MIN)}")
-          COV_DECREASE=$(echo "$LINE < $BASE_LINE" | bc -l)
           
           STATUS="passed"
           REASON="coverage-enough"
@@ -222,7 +220,7 @@ jobs:
             REASON="below-minimum"
           fi
 
-          if [ "$MODE" = "decrease" ] && [ "$COV_DECREASE" -eq 1 ]; then
+          if [ "$MODE" = "decrease" ] && [ "$DELTA" -lt 0 ]; then
             STATUS="failed"
             REASON="coverage-decreased"
           fi
@@ -278,6 +276,23 @@ jobs:
         # working-directory: ${{ github.workspace }} 
         run: |
           FILE="${{ env.NORMALIZED_COVERAGE }}"
+          if [ -f "$FILE" ]; then
+            BASE=$(jq '.base // 0' "$FILE")
+            LINE=$(jq '.line' "$FILE")
+            DELTA=$(jq -r '.delta' "$FILE")
+            MIN=$(jq '.min' "$FILE")
+            STATUS=$(jq -r '.status' "$FILE")
+            MODE=$(jq -r '.mode' "$FILE")
+            REASON=$(jq -r '.reason' "$FILE")
+          else
+            BASE=0
+            LINE=0
+            DELTA="➖"
+            MIN=0
+            STATUS="missing"
+            MODE="info"
+            REASON=""
+          fi
 
           {
             echo "## 🧪 Quality Gate "
@@ -305,41 +320,22 @@ jobs:
             fi
 
             echo ""
+            echo "```cmd"
+            echo "| Metric | Value |"
+            echo "|--------|--------|"
+            echo "| Base Branch | $BASE% |"
+            echo "| Coverage | **$LINE%** |"
+            echo "| Δ | $DELTA |"
+            echo "| Minimum | $MIN% |"
+            echo "| Mode | \`$MODE\` |"
+            echo "| Status | **$STATUS** |"
+            echo "```"
+            echo ""
+            if [ -n "$REASON" ]; then
+              echo "**Reason:** $REASON"
+            fi
+
             if [ -f "$FILE" ]; then
-                BASE=$(jq '.base // 0' "$FILE")
-                LINE=$(jq '.line' "$FILE")
-                DELTA=$(jq -r '.delta' "$FILE")
-                MIN=$(jq '.min' "$FILE")
-                STATUS=$(jq -r '.status' "$FILE")
-                MODE=$(jq -r '.mode' "$FILE")
-                REASON=$(jq -r '.reason' "$FILE")
-              else
-                BASE=0
-                LINE=0
-                DELTA="➖"
-                MIN=0
-                STATUS="missing"
-                MODE="info"
-                REASON=""
-              fi
-
-              
-              echo "```cmd"
-              echo "| Metric | Value |"
-              echo "|--------|--------|"
-              echo "| Base Branch | $BASE% |"
-              echo "| Coverage | **$LINE%** |"
-              echo "| Δ | $DELTA |"
-              echo "| Minimum | $MIN% |"
-              echo "| Mode | \`$MODE\` |"
-              echo "| Status | **$STATUS** |"
-              echo "```"
-              echo ""
-              if [ -n "$REASON" ]; then
-                echo "**Reason:** $REASON"
-              fi
-
-              echo ""
               echo "**📦 Artifacts:** coverage-report"
             fi
           } >> $GITHUB_STEP_SUMMARY

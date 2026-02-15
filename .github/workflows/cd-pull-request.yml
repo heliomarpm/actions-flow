@@ -107,6 +107,8 @@ jobs:
           core.setOutput("mode", data.coverage.mode);
           core.setOutput("status", data.coverage.status);
           core.setOutput("reason", data.coverage.reason);
+
+          echo "→ Coverage: ${{ data.coverage }}%"
     # read-coverage:
     #   needs: resolve-branch
     #   if: needs.resolve-branch.outputs.skip != 'true'
@@ -254,15 +256,16 @@ jobs:
     - name: 🏷 Ensure auto-generated label exists
       if: needs.resolve-branch.outputs.skip != 'true'
       run: |
+        ensure_label "auto-generated" "Pull Request criada automaticamente" 006B75
+        ensure_label "coverage-failed" "Cobertura de testes abaixo do limite mínimo" D93F0B
+        ensure_label "coverage-passed" "Cobertura de testes adequado" 0E8A16
+        ensure_label "coverage-missing" "Sem testes ou cobertura de testes"" E99695
+
         # gh label create auto-generated --description "Pull Request criada automaticamente" --color 006B75 || true
         # gh label create "coverage-failed" --description "Cobertura de testes abaixo do limite mínimo." --color "D93F0B" || true
         # gh label create "coverage-passed" --description "Cobertura de testes acima do limite mínimo." --color "0E8A16" || true
         # gh label create "coverage-missing" --description "Cobertura de testes não encontrada." --color "E99695" || true
 
-        ensure_label "auto-generated" "Pull Request criada automaticamente" 006B75
-        ensure_label "coverage-failed" "Cobertura abaixo do limite" D93F0B
-        ensure_label "coverage-passed" "Cobertura OK" 0E8A16
-        ensure_label "coverage-missing" "Sem testes" E99695
       env:
         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
@@ -276,6 +279,14 @@ jobs:
         COV_STATUS="${{ needs.read-quality.outputs.status }}"
         COV_MODE="${{ needs.read-quality.outputs.mode }}"
         COV_REASON="${{ needs.read-quality.outputs.reason }}"
+
+        echo "COV_BASE=$COV_BASE"
+        echo "COV_LINE=$COV_LINE"
+        echo "COV_DELTA=$COV_DELTA"
+        echo "COV_MIN=$COV_MIN"
+        echo "COV_STATUS=$COV_STATUS"
+        echo "COV_MODE=$COV_MODE"
+        echo "COV_REASON=$COV_REASON"
 
         TITLE="📊 Cobertura de Testes"
 
@@ -396,7 +407,7 @@ jobs:
         cat <<EOF >> $GITHUB_STEP_SUMMARY
         ## 🔀 Auto Pull Request
 
-        **Status:** \ `${{ steps.create-pr.outputs.pr_action || 'processed' }}\`
+        **Status:** \`${{ steps.create-pr.outputs.pr_action || 'processed' }}\`
 
         **From:** \`${{ needs.resolve-branch.outputs.head }}\`  
         **To:** \`${{ needs.resolve-branch.outputs.base }}\`

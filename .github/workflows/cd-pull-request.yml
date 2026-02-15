@@ -419,7 +419,7 @@ jobs:
 
         echo ""
 
-        🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || \`failed\` }}
+        🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || '<failed>' }}
 
         ---
         _Gerado automaticamente pela action **auto-pr**_

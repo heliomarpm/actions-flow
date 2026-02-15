@@ -160,26 +160,16 @@ jobs:
             echo "report=not-found" >> $GITHUB_OUTPUT
           fi
 
+          echo "--------------------------------------"
           log "Coverage status: $STATUS"
-          log "Coverage line: $LINE"
           log "Coverage report: $FILE"
-
-      - name: 👀 Files in workspace
-        working-directory: ${{ steps.path.outputs.value }}/coverage
-        run: |
-          ls_files
-
-      - name: 👀 Files in workspace
-        working-directory: ${{ github.workspace }}/coverage
-        run: |
-          ls_files
 
       - name: ✅ Evaluate coverage
         id: eval-coverage
         run: |
           REPORT="${{ steps.coverage.outputs.report }}"
-          LINE=${{ steps.coverage.outputs.line }}
-          MIN=${{ inputs.coverage_min }}
+          LINE=${{ steps.coverage.outputs.line || 0 }}
+          MIN=${{ inputs.coverage_min || 0 }}
           MODE="${{ inputs.coverage_mode }}"
 
           log "Minimum coverage: $MIN%"
@@ -192,9 +182,9 @@ jobs:
             echo "⚠️ No tests or coverage detected"
 
             if [ "$MODE" = "block" ]; then
-              fail "Blocking PR: tests not implemented"
+              fail "❌ Blocking PR: tests not implemented"
             fi
-          elif awk "BEGIN {exit !($LINE < $MIN)}"; then
+          elif [ "$LINE" -lt "$MIN" ]; then
             FINAL_STATUS="failed"
             MSG="❌ Coverage below threshold ($LINE < $MIN)"
 

@@ -33,6 +33,11 @@ ls_files() {
   ls -la
 }
 
+ensure_label () {
+  gh label list --json name --jq '.[].name' | grep -qx "$1" || \
+  gh label create "$1" --description "$2" --color "$3"
+}
+
 resolve_project_path() {
   local raw="$1"
   local workspace="${GITHUB_WORKSPACE:?GITHUB_WORKSPACE not set}"

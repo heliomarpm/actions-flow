@@ -260,7 +260,7 @@ jobs:
         ensure_label "auto-generated" "Pull Request criada automaticamente" 006B75
         ensure_label "coverage-failed" "Cobertura de testes abaixo do limite mínimo" D93F0B
         ensure_label "coverage-passed" "Cobertura de testes adequado" 0E8A16
-        ensure_label "coverage-missing" "Sem testes ou cobertura de testes"" E99695
+        ensure_label "coverage-missing" "Sem testes ou cobertura de testes" E99695
 
         # gh label create auto-generated --description "Pull Request criada automaticamente" --color 006B75 || true
         # gh label create "coverage-failed" --description "Cobertura de testes abaixo do limite mínimo." --color "D93F0B" || true

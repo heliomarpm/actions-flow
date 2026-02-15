@@ -412,22 +412,19 @@ jobs:
         **To:** \`${{ needs.resolve-branch.outputs.base }}\`
 
         **Coverage:** \`${{ needs.read-quality.outputs.status }}\`
-
-        echo ""        
-        echo "| Metric | Value |"
-        echo "|--------|--------|"
-        echo "| Base Branch | ${{ needs.read-quality.outputs.base }}% |"
-        echo "| Coverage | **${{ needs.read-quality.outputs.line }}%** |"
-        echo "| Delta Δ | ${{ needs.read-quality.outputs.delta }} |"
-        echo "| Minimum | ${{ needs.read-quality.outputs.min }}% |"
-        echo "| Mode | \`${{ needs.read-quality.outputs.mode }}\` |"
-        echo "| Status | \`${{ needs.read-quality.outputs.status }}\` |"
-        echo ""
+        
+        | Metric      | Value                                       |
+        |------------ |-------------------------------------------- |
+        | Base Branch | ${{ needs.read-quality.outputs.base }}%     |
+        | Coverage    | **${{ needs.read-quality.outputs.line }}%** |
+        | Delta Δ     | ${{ needs.read-quality.outputs.delta }}     |
+        | Minimum     | ${{ needs.read-quality.outputs.min }}%      |
+        | Mode        | \`${{ needs.read-quality.outputs.mode }}\`  |
+        | Status      | \`${{ needs.read-quality.outputs.status }}\`|
+        
         if [ -n "${{ needs.read-quality.outputs.reason }}" ]; then
-          echo "**Reason:** ${{ needs.read-quality.outputs.reason }}"
+          **Reason:** ${{ needs.read-quality.outputs.reason }}
         fi
-
-        echo ""
 
         🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || '<failed>' }}
 

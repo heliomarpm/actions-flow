@@ -302,7 +302,6 @@ jobs:
             fi
 
             echo ""
-            echo "```cmd"
             echo "| Metric | Value |"
             echo "|--------|--------|"
             echo "| Base Branch | ${{ steps.eval-coverage.outputs.base }}% |"
@@ -311,7 +310,7 @@ jobs:
             echo "| Minimum | ${{ steps.eval-coverage.outputs.min }}% |"
             echo "| Mode | \`${{ steps.eval-coverage.outputs.mode }}\` |"
             echo "| Status | **${{ steps.eval-coverage.outputs.status }}** |"
-            echo "```"
+            
             echo ""
             if [ -n "${{ steps.eval-coverage.outputs.reason }}" ]; then
               echo "**Reason:** ${{ steps.eval-coverage.outputs.reason }}"

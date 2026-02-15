@@ -276,25 +276,6 @@ jobs:
         if: always()
         # working-directory: ${{ github.workspace }} 
         run: |
-          FILE="${{ env.NORMALIZED_COVERAGE }}"
-          if [ -f "$FILE" ]; then
-            BASE=$(jq '.base // 0' "$FILE")
-            LINE=$(jq '.line' "$FILE")
-            DELTA=$(jq -r '.delta' "$FILE")
-            MIN=$(jq '.min' "$FILE")
-            STATUS=$(jq -r '.status' "$FILE")
-            MODE=$(jq -r '.mode' "$FILE")
-            REASON=$(jq -r '.reason' "$FILE")
-          else
-            BASE=0
-            LINE=0
-            DELTA="➖"
-            MIN=0
-            STATUS="missing"
-            MODE="info"
-            REASON=""
-          fi
-
           {
             echo "## 🧪 Quality Gate "
             echo ""
@@ -324,19 +305,19 @@ jobs:
             echo "```cmd"
             echo "| Metric | Value |"
             echo "|--------|--------|"
-            echo "| Base Branch | $BASE% |"
-            echo "| Coverage | **$LINE%** |"
-            echo "| Δ | $DELTA |"
-            echo "| Minimum | $MIN% |"
-            echo "| Mode | \`$MODE\` |"
-            echo "| Status | **$STATUS** |"
+            echo "| Base Branch | ${{ steps.eval-coverage.outputs.base }}% |"
+            echo "| Coverage | **${{ steps.eval-coverage.outputs.line }}%** |"
+            echo "| Δ | ${{ steps.eval-coverage.outputs.delta }} |"
+            echo "| Minimum | ${{ steps.eval-coverage.outputs.min }}% |"
+            echo "| Mode | \`${{ steps.eval-coverage.outputs.mode }}\` |"
+            echo "| Status | **${{ steps.eval-coverage.outputs.status }}** |"
             echo "```"
             echo ""
-            if [ -n "$REASON" ]; then
-              echo "**Reason:** $REASON"
+            if [ -n "${{ steps.eval-coverage.outputs.reason }}" ]; then
+              echo "**Reason:** ${{ steps.eval-coverage.outputs.reason }}"
             fi
 
-            if [ -f "$FILE" ]; then
+            if [ -f "${{ env.NORMALIZED_COVERAGE }}" ]; then
               echo "**📦 Artifacts:** coverage-report"
             fi
           } >> $GITHUB_STEP_SUMMARY

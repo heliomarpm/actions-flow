@@ -200,9 +200,10 @@ jobs:
           MODE="${{ inputs.coverage_mode }}"
           BASE_LINE=${{ steps.base-coverage.outputs.line || 0 }}
 
-          # BELOW_MIN=$(awk "BEGIN {print ($LINE < $MIN)}")
-          BELOW_MIN=$(echo "$LINE < $MIN" | bc -l) # $(awk "BEGIN {exit !($LINE < $MIN)}")
-          DELTA=$(echo "$LINE - $BASE_LINE" | bc -l)
+          # BELOW_MIN=$(echo "$LINE < $MIN" | bc -l) 
+          # DELTA=$(echo "$LINE - $BASE_LINE" | bc -l)
+          BELOW_MIN=$(awk "BEGIN {print ($LINE < $MIN)}")
+          DELTA=$(awk "BEGIN {print ($LINE - $BASE_LINE)}")
 
           if [ "$DELTA" -gt 0 ]; then
             DELTA_DISPLAY="📈 +$DELTA%"

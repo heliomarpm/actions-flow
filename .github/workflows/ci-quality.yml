@@ -298,7 +298,7 @@ jobs:
               coverage: {
                 line: Number("${{ steps.eval-coverage.outputs.line || 0 }}"),
                 base: Number("${{ steps.eval-coverage.outputs.base || 0 }}"),
-                delta: "${{ steps.eval-coverage.outputs.delta || 0 }}",
+                delta: "${{ steps.eval-coverage.outputs.delta || '0' }}",
                 minimum: Number("${{ inputs.coverage_min || 0 }}"),
                 mode: "${{ inputs.coverage_mode }}",
                 status: "${{ steps.eval-coverage.outputs.status || 'unknown' }}",

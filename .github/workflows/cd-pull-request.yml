@@ -205,7 +205,7 @@ jobs:
           {
             echo "## ❌ Invalid destination branch"
             echo ""
-            echo "Branch '$BASE' does not exist."
+            echo "Branch `$BASE` does not exist."
             echo ""
             echo "### Available branches:"
             git ls-remote --heads origin | awk '{print $2}' | sed 's|refs/heads/||'
@@ -368,16 +368,14 @@ jobs:
         **Coverage:** ${{ needs.read-coverage.outputs.status }}
 
         echo ""        
-        echo "```cmd"
         echo "| Metric | Value |"
         echo "|--------|--------|"
         echo "| Base Branch | ${{ needs.read-coverage.outputs.base }}% |"
         echo "| Coverage | **${{ needs.read-coverage.outputs.line }}%** |"
-        echo "| Δ | ${{ needs.read-coverage.outputs.delta }} |"
+        echo "| Delta Δ | ${{ needs.read-coverage.outputs.delta }} |"
         echo "| Minimum | ${{ needs.read-coverage.outputs.min }}% |"
         echo "| Mode | \`${{ needs.read-coverage.outputs.mode }}\` |"
         echo "| Status | **${{ needs.read-coverage.outputs.status }}** |"
-        echo "```"
         echo ""
         if [ -n "${{ needs.read-coverage.outputs.reason }}" ]; then
           echo "**Reason:** ${{ needs.read-coverage.outputs.reason }}"
@@ -385,7 +383,7 @@ jobs:
 
         echo ""
 
-        🔗 **PR:** ${{ steps.create-pr.outputs.pr_url }}
+        🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || 'failed' }}
 
         ---
         _Gerado automaticamente pela action **auto-pr**_

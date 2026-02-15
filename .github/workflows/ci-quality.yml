@@ -306,7 +306,7 @@ jobs:
             echo "|--------|--------|"
             echo "| Base Branch | ${{ steps.eval-coverage.outputs.base }}% |"
             echo "| Coverage | **${{ steps.eval-coverage.outputs.line }}%** |"
-            echo "| Δ | ${{ steps.eval-coverage.outputs.delta }} |"
+            echo "| Delta Δ | ${{ steps.eval-coverage.outputs.delta }} |"
             echo "| Minimum | ${{ steps.eval-coverage.outputs.min }}% |"
             echo "| Mode | \`${{ steps.eval-coverage.outputs.mode }}\` |"
             echo "| Status | **${{ steps.eval-coverage.outputs.status }}** |"

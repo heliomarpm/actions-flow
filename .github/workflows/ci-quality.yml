@@ -8,13 +8,6 @@ on:
         required: false
         type: string
         default: "auto"
-        options:
-          - auto
-          - node
-          - php
-          - dotnet
-          - python
-          - go
       project_path:
         description: 'Project path source code'
         required: false
@@ -31,9 +24,6 @@ on:
         required: false
         type: string
         default: "auto"
-        options:
-          - auto
-          - custom
       coverage_command:
         description: 'Command to calculate coverage percentage'
         required: false
@@ -43,17 +33,11 @@ on:
         type: number
         required: false
         default: 80
-        minimum: 0
-        maximum: 100
       coverage_mode:
         description: 'Coverage mode (info | block | decrease)'
         type: string
         required: false
         default: "info"
-        options:
-          - info
-          - block
-          - decrease
 
       coverage_continue_on_failure:
         description: 'Continue pipeline even if tests fail. (default: true)'

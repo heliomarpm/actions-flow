@@ -14,24 +14,6 @@ on:
         type: string
         default: "develop"
 
-      coverage_min:
-        description: 'Minimum coverage percentage (0-100 | default: 80)'
-        type: number
-        required: false
-        default: 80
-        minimum: 0
-        maximum: 100
-
-      coverage_mode:
-        description: 'Coverage mode (info | block | decrease)'
-        type: string
-        required: false
-        default: "info"
-        options:
-        - info
-        - block
-        - decrease
-
     secrets:
       GH_TOKEN:
         required: true

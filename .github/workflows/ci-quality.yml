@@ -162,7 +162,8 @@ jobs:
 
           STATUS="passed"
 
-          if (( LINE < MIN )); then
+          # if (( LINE < MIN )); then
+          if awk "BEGIN {exit !($LINE < $MIN)}"; then
             STATUS="failed"
           fi
 
@@ -192,7 +193,7 @@ jobs:
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
-          name: coverage-${{ github.run_id }}  # coverage-${{ github.job }}-${{ github.run_attempt }}
+          name: coverage-${{ github.job }}-${{ github.run_attempt }} # coverage-${{ github.run_id }} 
           path: ${{ github.workspace }}/coverage/coverage-summary.normalized.json
           if-no-files-found: ignore
 

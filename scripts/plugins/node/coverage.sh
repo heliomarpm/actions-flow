@@ -8,7 +8,7 @@ COVERAGE_STRATEGY="${COVERAGE_STRATEGY:-auto}"
 COVERAGE_COMMAND="${COVERAGE_COMMAND:-}"
 
 RAW_FILE="coverage/coverage-summary.json"
-NORMALIZED_FILE="$REPO_ROOT/coverage/coverage-summary.normalized.json"
+NORMALIZED_FILE="${NORMALIZED_FILE:-$REPO_ROOT/coverage/coverage-summary.normalized.json}"
 
 log() { echo "→ $1"; }
 

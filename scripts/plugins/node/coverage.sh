@@ -8,9 +8,32 @@ COVERAGE_STRATEGY="${COVERAGE_STRATEGY:-auto}"
 COVERAGE_COMMAND="${COVERAGE_COMMAND:-}"
 
 RAW_FILE="coverage/coverage-summary.json"
-NORMALIZED_FILE="$REPO_ROOT/__coverage__/coverage-summary.normalized.json"
+NORMALIZED_FILE="coverage/coverage-summary.normalized.json"
+
+echo "→ NORMALIZED_FILE: $NORMALIZED_FILE"
 
 log() { echo "→ $1"; }
+
+create_normalized_file() {
+  local LINE=${1:-0}
+  local BRANCH=${2:-0}
+  local FUNCTION=${3:-0}
+
+  mkdir -p "$REPO_ROOT/coverage"
+
+cat <<EOF > "$NORMALIZED_FILE"
+{
+  "line": $LINE,
+  "branch": $BRANCH,
+  "function": $FUNCTION
+}
+EOF
+
+  log "✅ Coverage normalized:"
+  log "  line: $LINE%"
+  log "  branch: $BRANCH%"
+  log "  function: $FUNCTION%"
+}
 
 # ------------------------------------------------------------
 # 1️⃣ Detect test existence
@@ -32,17 +55,7 @@ fi
 if [ "$HAS_TESTS" = "false" ]; then
   echo "⚠️ No tests detected. Generating zero coverage."
 
-  mkdir -p coverage
-
-  cat <<EOF > "$NORMALIZED_FILE"
-{
-  "line": 0,
-  "branch": 0,
-  "function": 0
-}
-EOF
-
-  echo "✅ Coverage normalized: 0%"
+  create_normalized_file
   exit 0
 fi
 
@@ -110,19 +123,4 @@ FUNCTION=$(jq '.total.functions.pct // 0' "$RAW_FILE")
 # ------------------------------------------------------------
 # 5️⃣ Normalize contract
 # ------------------------------------------------------------
-mkdir -p coverage
-
-cat <<EOF > "$NORMALIZED_FILE"
-{
-  "line": $LINE,
-  "branch": $BRANCH,
-  "function": $FUNCTION
-}
-EOF
-
-log "Coverage normalized:"
-log "  line: $LINE%"
-log "  branch: $BRANCH%"
-log "  function: $FUNCTION%"
-
-echo "✅ Coverage normalization completed"
+create_normalized_file "$LINE" "$BRANCH" "$FUNCTION"

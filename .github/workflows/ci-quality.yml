@@ -170,7 +170,7 @@ jobs:
           ls_files
 
       - name: 👀 Files in workspace
-        working-directory: ${{ github.workspace }}/__coverage__
+        working-directory: ${{ github.workspace }}/coverage
         run: |
           ls_files
 

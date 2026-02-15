@@ -19,11 +19,18 @@ on:
         type: number
         required: false
         default: 80
+        minimum: 0
+        maximum: 100
+
       coverage_mode:
         description: 'Coverage mode (info | block | decrease)'
         type: string
         required: false
         default: "info"
+        options:
+        - info
+        - block
+        - decrease
 
     secrets:
       GH_TOKEN:
@@ -71,65 +78,112 @@ jobs:
       if: steps.resolve.outputs.skip == 'true'
       run: echo "→ Main branch detected. Skipping auto PR."
 
-  read-coverage:
+  read-quality:
     needs: resolve-branch
     if: needs.resolve-branch.outputs.skip != 'true'
     runs-on: ubuntu-latest
 
-    env:
-      REUSABLE_PATH: ${{ github.workspace }}/__reusable_flow__
-      BASH_ENV: ${{ github.workspace }}/__reusable_flow__/scripts/shared/shell-helpers.sh
-
-    # outputs:
-    #   line: ${{ steps.coverage.outputs.line }}
-    #   status: ${{ steps.eval-coverage.outputs.status }}
-
     outputs:
-      line: ${{ steps.coverage.outputs.line }}
-      status: ${{ steps.coverage.outputs.status }}
-      min: ${{ steps.coverage.outputs.min }}
-      mode: ${{ steps.coverage.outputs.mode }}
+      status: ${{ steps.quality.outputs.status }}
+      base: ${{ steps.quality.outputs.base }}
+      line: ${{ steps.quality.outputs.line }}
+      min: ${{ steps.quality.outputs.min }}
+      delta: ${{ steps.quality.outputs.delta }}
+      mode: ${{ steps.quality.outputs.mode }}
+      reason: ${{ steps.quality.outputs.reason }}
 
     steps:
-    - name: 📥 Download coverage artifact
-      uses: actions/download-artifact@v4
-      continue-on-error: true
+    - name: 🔎 Read quality check
+      id: quality
+      uses: actions/github-script@v7
       with:
-        pattern: coverage-*
-        path: ${{ github.workspace }}/coverage
-        merge-multiple: true
+        github-token: ${{ secrets.GH_TOKEN }}
+        script: |
+          const { owner, repo } = context.repo;
+          const sha = context.payload.workflow_run.head_sha;
 
-    - name: 📊 Read coverage report
-      id: coverage
-      run: |
-        FILE=$(find coverage -name coverage-summary.normalized.json | head -n 1)
+          const checks = await github.rest.checks.listForRef({
+            owner,
+            repo,
+            ref: sha
+          });
 
-        if [ -z "$FILE" ]; then
-          echo "base=0" >> $GITHUB_OUTPUT
-          echo "line=0" >> $GITHUB_OUTPUT
-          echo "delta=➖" >> $GITHUB_OUTPUT
-          echo "min=0" >> $GITHUB_OUTPUT
-          echo "status=missing" >> $GITHUB_OUTPUT
-          echo "mode=info" >> $GITHUB_OUTPUT
-          echo "reason=not-found" >> $GITHUB_OUTPUT
-          exit 0
-        fi
+          const check = checks.data.check_runs.find(c => c.name === "actions-flow/quality");
 
-        BASE_LINE=$(jq '.base' "$FILE")
-        LINE=$(jq '.line' "$FILE")
-        DELTA=$(jq -r '.delta' "$FILE")
-        MIN=$(jq '.min' "$FILE")
-        STATUS=$(jq -r '.status' "$FILE")
-        MODE=$(jq -r '.mode' "$FILE")
-        REASON=$(jq -r '.reason' "$FILE")
+          if (!check) {
+            core.setOutput("status", "missing");
+            return;
+          }
 
-        echo "base=$BASE_LINE" >> $GITHUB_OUTPUT
-        echo "line=$LINE" >> $GITHUB_OUTPUT
-        echo "delta=$DELTA" >> $GITHUB_OUTPUT
-        echo "min=$MIN" >> $GITHUB_OUTPUT
-        echo "status=$STATUS" >> $GITHUB_OUTPUT
-        echo "mode=$MODE" >> $GITHUB_OUTPUT
-        echo "reason=$REASON" >> $GITHUB_OUTPUT
+          const json = check.output.text.match(/```json\n([\s\S]*)\n```/)[1];
+          const data = JSON.parse(json);
+
+          core.setOutput("line", data.coverage.line);
+          core.setOutput("base", data.coverage.base);
+          core.setOutput("delta", data.coverage.delta);
+          core.setOutput("min", data.coverage.minimum);
+          core.setOutput("mode", data.coverage.mode);
+          core.setOutput("status", data.coverage.status);
+          core.setOutput("reason", data.coverage.reason);
+    # read-coverage:
+    #   needs: resolve-branch
+    #   if: needs.resolve-branch.outputs.skip != 'true'
+    #   runs-on: ubuntu-latest
+
+    #   env:
+    #     REUSABLE_PATH: ${{ github.workspace }}/__reusable_flow__
+    #     BASH_ENV: ${{ github.workspace }}/__reusable_flow__/scripts/shared/shell-helpers.sh
+
+    #   # outputs:
+    #   #   line: ${{ steps.coverage.outputs.line }}
+    #   #   status: ${{ steps.eval-coverage.outputs.status }}
+
+    #   outputs:
+    #     line: ${{ steps.coverage.outputs.line }}
+    #     status: ${{ steps.coverage.outputs.status }}
+    #     min: ${{ steps.coverage.outputs.min }}
+    #     mode: ${{ steps.coverage.outputs.mode }}
+
+    #   steps:
+    #   - name: 📥 Download coverage artifact
+    #     uses: actions/download-artifact@v4
+    #     continue-on-error: true
+    #     with:
+    #       pattern: coverage-*
+    #       path: ${{ github.workspace }}/coverage
+    #       merge-multiple: true
+
+    #   - name: 📊 Read coverage report
+    #     id: coverage
+    #     run: |
+    #       FILE=$(find coverage -name coverage-summary.normalized.json | head -n 1)
+
+    #       if [ -z "$FILE" ]; then
+    #         echo "base=0" >> $GITHUB_OUTPUT
+    #         echo "line=0" >> $GITHUB_OUTPUT
+    #         echo "delta=➖" >> $GITHUB_OUTPUT
+    #         echo "min=0" >> $GITHUB_OUTPUT
+    #         echo "status=missing" >> $GITHUB_OUTPUT
+    #         echo "mode=info" >> $GITHUB_OUTPUT
+    #         echo "reason=not-found" >> $GITHUB_OUTPUT
+    #         exit 0
+    #       fi
+
+    #       BASE_LINE=$(jq '.base' "$FILE")
+    #       LINE=$(jq '.line' "$FILE")
+    #       DELTA=$(jq -r '.delta' "$FILE")
+    #       MIN=$(jq '.min' "$FILE")
+    #       STATUS=$(jq -r '.status' "$FILE")
+    #       MODE=$(jq -r '.mode' "$FILE")
+    #       REASON=$(jq -r '.reason' "$FILE")
+
+    #       echo "base=$BASE_LINE" >> $GITHUB_OUTPUT
+    #       echo "line=$LINE" >> $GITHUB_OUTPUT
+    #       echo "delta=$DELTA" >> $GITHUB_OUTPUT
+    #       echo "min=$MIN" >> $GITHUB_OUTPUT
+    #       echo "status=$STATUS" >> $GITHUB_OUTPUT
+    #       echo "mode=$MODE" >> $GITHUB_OUTPUT
+    #       echo "reason=$REASON" >> $GITHUB_OUTPUT
 
     # - name: ✅ Evaluate coverage
     #   id: eval-coverage
@@ -167,7 +221,7 @@ jobs:
   auto-pr:
     needs:
     - resolve-branch
-    - read-coverage
+    - read-quality
     if: needs.resolve-branch.outputs.skip != 'true'
     runs-on: ubuntu-latest
 
@@ -233,13 +287,13 @@ jobs:
     - name: 📝 Generate PR body
       if: needs.resolve-branch.outputs.skip != 'true'
       run: |
-        COV_BASE="${{ needs.read-coverage.outputs.base }}"
-        COV_LINE="${{ needs.read-coverage.outputs.line }}"
-        COV_DELTA="${{ needs.read-coverage.outputs.delta }}"
-        COV_MIN="${{ needs.read-coverage.outputs.min }}"
-        COV_STATUS="${{ needs.read-coverage.outputs.status }}"
-        COV_MODE="${{ needs.read-coverage.outputs.mode }}"
-        COV_REASON="${{ needs.read-coverage.outputs.reason }}"
+        COV_BASE="${{ needs.read-quality.outputs.base }}"
+        COV_LINE="${{ needs.read-quality.outputs.line }}"
+        COV_DELTA="${{ needs.read-quality.outputs.delta }}"
+        COV_MIN="${{ needs.read-quality.outputs.min }}"
+        COV_STATUS="${{ needs.read-quality.outputs.status }}"
+        COV_MODE="${{ needs.read-quality.outputs.mode }}"
+        COV_REASON="${{ needs.read-quality.outputs.reason }}"
 
         TITLE="📊 Cobertura de Testes"
 
@@ -302,7 +356,7 @@ jobs:
         HEAD="${{ needs.resolve-branch.outputs.head }}"
         BASE="${{ needs.resolve-branch.outputs.base }}"
         TITLE="🔀 PR ($(date +'%Y-%m-%d')): ${HEAD} → ${BASE}"
-        STATUS_COVERAGE="${{ needs.read-coverage.outputs.status }}"
+        STATUS_COVERAGE="${{ needs.read-quality.outputs.status }}"
 
         if [ "$STATUS_COVERAGE" = "failed" ]; then
           ADD_LABEL="coverage-failed"
@@ -365,20 +419,20 @@ jobs:
         **From:** \`${{ needs.resolve-branch.outputs.head }}\`  
         **To:** \`${{ needs.resolve-branch.outputs.base }}\`
 
-        **Coverage:** ${{ needs.read-coverage.outputs.status }}
+        **Coverage:** ${{ needs.read-quality.outputs.status }}
 
         echo ""        
         echo "| Metric | Value |"
         echo "|--------|--------|"
-        echo "| Base Branch | ${{ needs.read-coverage.outputs.base }}% |"
-        echo "| Coverage | **${{ needs.read-coverage.outputs.line }}%** |"
-        echo "| Delta Δ | ${{ needs.read-coverage.outputs.delta }} |"
-        echo "| Minimum | ${{ needs.read-coverage.outputs.min }}% |"
-        echo "| Mode | \`${{ needs.read-coverage.outputs.mode }}\` |"
-        echo "| Status | **${{ needs.read-coverage.outputs.status }}** |"
+        echo "| Base Branch | ${{ needs.read-quality.outputs.base }}% |"
+        echo "| Coverage | **${{ needs.read-quality.outputs.line }}%** |"
+        echo "| Delta Δ | ${{ needs.read-quality.outputs.delta }} |"
+        echo "| Minimum | ${{ needs.read-quality.outputs.min }}% |"
+        echo "| Mode | \`${{ needs.read-quality.outputs.mode }}\` |"
+        echo "| Status | **${{ needs.read-quality.outputs.status }}** |"
         echo ""
-        if [ -n "${{ needs.read-coverage.outputs.reason }}" ]; then
-          echo "**Reason:** ${{ needs.read-coverage.outputs.reason }}"
+        if [ -n "${{ needs.read-quality.outputs.reason }}" ]; then
+          echo "**Reason:** ${{ needs.read-quality.outputs.reason }}"
         fi
 
         echo ""

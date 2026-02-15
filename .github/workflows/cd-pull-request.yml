@@ -45,13 +45,7 @@ jobs:
     - name: 🔍 Resolve branches
       id: resolve
       run: |
-        echo "${{ github.event.workflow_run.head_branch }}"
-        echo "${{ github.head_ref }}"
-        echo "${{ github.ref_name }}"
-        echo "${{ github.event.workflow_run.head_branch || github.head_ref || github.ref_name }}"
-
-        # HEAD="${{ github.event.workflow_run.head_branch }}"
-        HEAD="${{ github.head_ref || github.ref_name }}"
+        HEAD="${{ github.event.workflow_run.head_branch || github.head_ref || github.ref_name }}"
         MAIN="${{ inputs.main_branch }}"
         DEV="${{ inputs.develop_branch }}"
         REL_PREFIX="${{ inputs.prefix_release_branch }}"

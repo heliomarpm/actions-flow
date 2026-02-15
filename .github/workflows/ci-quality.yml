@@ -193,7 +193,7 @@ jobs:
         uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
-          name: coverage-${{ github.job }}-${{ github.run_attempt }} # coverage-${{ github.run_id }} 
+          name: coverage--${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}  
           path: ${{ github.workspace }}/coverage/coverage-summary.normalized.json
           if-no-files-found: ignore
 

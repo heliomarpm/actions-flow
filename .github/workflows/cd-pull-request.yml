@@ -81,70 +81,81 @@ jobs:
       REUSABLE_PATH: ${{ github.workspace }}/__reusable_flow__
       BASH_ENV: ${{ github.workspace }}/__reusable_flow__/scripts/shared/shell-helpers.sh
 
+    # outputs:
+    #   line: ${{ steps.coverage.outputs.line }}
+    #   status: ${{ steps.eval-coverage.outputs.status }}
+
     outputs:
       line: ${{ steps.coverage.outputs.line }}
-      status: ${{ steps.eval-coverage.outputs.status }}
+      status: ${{ steps.coverage.outputs.status }}
+      min: ${{ steps.coverage.outputs.min }}
+      mode: ${{ steps.coverage.outputs.mode }}
 
     steps:
     - name: 📥 Download coverage artifact
       uses: actions/download-artifact@v4
       continue-on-error: true
       with:
-        name: coverage-report
+        pattern: coverage-*
         path: coverage
+        merge-multiple: true
         if-no-files-found: ignore
 
     - name: 📊 Read coverage report
       id: coverage
       run: |
-        FILE="coverage/coverage-summary.normalized.json"
+        FILE=$(find coverage -name coverage-summary.normalized.json | head -n 1)
 
-        if [ -f "$FILE" ]; then
-          LINE=$(jq '.line' "$FILE")
-          echo "line=$LINE" >> $GITHUB_OUTPUT
-          echo "report=found" >> $GITHUB_OUTPUT
-
-          echo "--------------------------------------"
-          echo "✅ Coverage read from artifact
-          echo "→ Coverage line: $LINE%"
-        else
-          echo "⚠️ Coverage artifact not found"
-          echo "line=" >> $GITHUB_OUTPUT
-          echo "report=not-found" >> $GITHUB_OUTPUT
+        if [ -z "$FILE" ]; then
+          echo "status=missing" >> $GITHUB_OUTPUT
+          echo "line=0" >> $GITHUB_OUTPUT
+          echo "min=0" >> $GITHUB_OUTPUT
+          echo "mode=info" >> $GITHUB_OUTPUT
+          exit 0
         fi
 
-    - name: ✅ Evaluate coverage
-      id: eval-coverage
-      run: |
-        REPORT="${{ steps.coverage.outputs.report }}"
-        LINE=${{ steps.coverage.outputs.line || 0 }}
-        MIN=${{ inputs.coverage_min || 0 }}
-        MODE="${{ inputs.coverage_mode }}"
+        LINE=$(jq '.line' "$FILE")
+        STATUS=$(jq -r '.status' "$FILE")
+        MIN=$(jq '.min' "$FILE")
+        MODE=$(jq -r '.mode' "$FILE")
 
-        echo "→ Minimum coverage: $MIN%"
-        echo "→ Coverage mode: $MODE"
+        echo "line=$LINE" >> $GITHUB_OUTPUT
+        echo "status=$STATUS" >> $GITHUB_OUTPUT
+        echo "min=$MIN" >> $GITHUB_OUTPUT
+        echo "mode=$MODE" >> $GITHUB_OUTPUT
 
-        FINAL_STATUS="passed"
+    # - name: ✅ Evaluate coverage
+    #   id: eval-coverage
+    #   run: |
+    #     REPORT="${{ steps.coverage.outputs.report }}"
+    #     LINE=${{ steps.coverage.outputs.line || 0 }}
+    #     MIN=${{ inputs.coverage_min || 0 }}
+    #     MODE="${{ inputs.coverage_mode }}"
 
-        if [ "$REPORT" = "not-found" ]; then
-          FINAL_STATUS="missing"
-          echo "⚠️ No tests or coverage detected"
+    #     echo "→ Minimum coverage: $MIN%"
+    #     echo "→ Coverage mode: $MODE"
 
-          if [ "$MODE" = "block" ]; then
-            fail "❌ Blocking PR: tests not implemented"
-          fi
-        elif [ "$LINE" -lt "$MIN" ]; then
-          FINAL_STATUS="failed"
-          MSG="❌ Coverage below threshold ($LINE < $MIN)"
+    #     FINAL_STATUS="passed"
 
-          if [ "$MODE" = "block" ]; then
-            fail "$MSG"
-          fi
+    #     if [ "$REPORT" = "not-found" ]; then
+    #       FINAL_STATUS="missing"
+    #       echo "⚠️ No tests or coverage detected"
 
-          echo "$MSG"
-        fi
+    #       if [ "$MODE" = "block" ]; then
+    #         fail "❌ Blocking PR: tests not implemented"
+    #       fi
+    #     elif [ "$LINE" -lt "$MIN" ]; then
+    #       FINAL_STATUS="failed"
+    #       MSG="❌ Coverage below threshold ($LINE < $MIN)"
 
-        echo "status=$FINAL_STATUS" >> $GITHUB_OUTPUT
+    #       if [ "$MODE" = "block" ]; then
+    #         fail "$MSG"
+    #       fi
+
+    #       echo "$MSG"
+    #     fi
+
+    #     echo "status=$FINAL_STATUS" >> $GITHUB_OUTPUT
 
   auto-pr:
     needs:
@@ -217,8 +228,8 @@ jobs:
       run: |
         COVERAGE_LINE="${{ needs.read-coverage.outputs.line }}"
         COVERAGE_STATUS="${{ needs.read-coverage.outputs.status }}"
-        COVERAGE_MIN="${{ inputs.coverage_min }}"
-        MODE="${{ inputs.coverage_mode }}"
+        COVERAGE_MIN="${{ needs.read-coverage.outputs.min }}"   # "${{ inputs.coverage_min }}"
+        MODE="${{ needs.read-coverage.outputs.mode }}"          # "${{ inputs.coverage_mode }}"
 
         TITLE="📊 Cobertura de Testes"
 

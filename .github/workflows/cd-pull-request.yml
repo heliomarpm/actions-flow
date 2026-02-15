@@ -108,7 +108,8 @@ jobs:
           core.setOutput("status", data.coverage.status);
           core.setOutput("reason", data.coverage.reason);
 
-          echo "→ Coverage: ${{ data.coverage }}%"
+          console.log("📊 Coverage: ", data.coverage);
+
     # read-coverage:
     #   needs: resolve-branch
     #   if: needs.resolve-branch.outputs.skip != 'true'

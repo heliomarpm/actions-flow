@@ -272,6 +272,35 @@ jobs:
           path: ${{ env.NORMALIZED_COVERAGE }}
           if-no-files-found: ignore
 
+      - name: Publish quality result
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const result = {
+              coverage: Number("${{ steps.eval-coverage.outputs.line || 0 }}"),
+              base: Number("${{ steps.eval-coverage.outputs.base || 0 }}"),
+              min: Number("${{ inputs.coverage_min || 0 }}"),
+              mode: "${{ inputs.coverage_mode }}",
+              status: "${{ steps.eval-coverage.outputs.status || 'unknown' }}",
+              reason: "${{ steps.eval-coverage.outputs.reason || 'not evaluated' }}"
+            };
+
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: "actions-flow/quality",
+              head_sha: context.sha,
+              status: "completed",
+              conclusion: result.status === "failed" ? "failure" : "success",
+              output: {
+                title: "Quality Report",
+                summary: "Machine readable report",
+                text: "```json\n" + JSON.stringify(result, null, 2) + "\n```"
+              }
+            });
+
       - name: 🧾 Job Summary
         if: always()
         # working-directory: ${{ github.workspace }} 

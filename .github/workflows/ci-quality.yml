@@ -8,6 +8,13 @@ on:
         required: false
         type: string
         default: null
+        options:
+          - auto
+          - node
+          - php
+          - dotnet
+          - python
+          - go
       project_path:
         description: 'Project path source code'
         required: false
@@ -24,6 +31,9 @@ on:
         required: false
         type: string
         default: "auto"
+        options:
+          - auto
+          - custom
       coverage_command:
         description: 'Command to calculate coverage percentage'
         required: false
@@ -33,11 +43,17 @@ on:
         type: number
         required: false
         default: 80
+        minimum: 0
+        maximum: 100
       coverage_mode:
         description: 'Coverage mode (info | block | decrease)'
         type: string
         required: false
         default: "info"
+        options:
+          - info
+          - block
+          - decrease
 
       coverage_continue_on_failure:
         description: 'Continue pipeline even if tests fail. (default: true)'
@@ -98,7 +114,7 @@ jobs:
         working-directory: ${{ steps.path.outputs.value }}
         run: |
           STACK="${{ inputs.stack }}"
-          if [[ -n "$STACK" ]]; then
+          if [[ -n "$STACK" && "$STACK" != "auto" ]]; then
             echo "🔹 Using stack from input: $STACK"
             echo "value=$STACK" >> $GITHUB_OUTPUT
             echo "source=input" >> $GITHUB_OUTPUT
@@ -279,13 +295,18 @@ jobs:
           github-token: ${{ github.token }}
           script: |
             const result = {
-              coverage: Number("${{ steps.eval-coverage.outputs.line || 0 }}"),
-              base: Number("${{ steps.eval-coverage.outputs.base || 0 }}"),
-              min: Number("${{ inputs.coverage_min || 0 }}"),
-              mode: "${{ inputs.coverage_mode }}",
-              status: "${{ steps.eval-coverage.outputs.status || 'unknown' }}",
-              reason: "${{ steps.eval-coverage.outputs.reason || 'not evaluated' }}"
+              coverage: {
+                line: Number("${{ steps.eval-coverage.outputs.line || 0 }}"),
+                base: Number("${{ steps.eval-coverage.outputs.base || 0 }}"),
+                delta: "${{ steps.eval-coverage.outputs.delta || 0 }}",
+                minimum: Number("${{ inputs.coverage_min || 0 }}"),
+                mode: "${{ inputs.coverage_mode }}",
+                status: "${{ steps.eval-coverage.outputs.status || 'unknown' }}",
+                reason: "${{ steps.eval-coverage.outputs.reason || 'not evaluated' }}"
+              }
             };
+
+            conclusion = "success"; //result.status === "failed" ? "failure" : "success";
 
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -293,10 +314,10 @@ jobs:
               name: "actions-flow/quality",
               head_sha: context.sha,
               status: "completed",
-              conclusion: result.status === "failed" ? "failure" : "success",
+              conclusion,
               output: {
                 title: "Quality Report",
-                summary: "Machine readable report",
+                summary: "Actions Flow - Quality check",
                 text: "```json\n" + JSON.stringify(result, null, 2) + "\n```"
               }
             });

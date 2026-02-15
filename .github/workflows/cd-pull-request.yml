@@ -302,7 +302,6 @@ jobs:
           COVERAGE_BLOCK=$(cat <<EOF
         ### $TITLE
 
-        ```cmd
         | Métrica | Valor  |
         |-------- |------- |
         | Branch Base  | **$COV_BASE%** |
@@ -311,7 +310,6 @@ jobs:
         | Mínimo requerido | $COV_MIN% |
         | Modo | \`$COV_MODE\` |
         | Status | **$COV_STATUS** |
-        ```
 
         EOF
         )

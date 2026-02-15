@@ -73,11 +73,11 @@ jobs:
         if: ${{ inputs.project_private == false }}
         uses: actions/checkout@v4
 
-      - name: 📌 Checkout reusable-actions scripts
+      - name: 📌 Checkout reusable repository
         uses: actions/checkout@v4
         with:
-          repository: heliomarpm/reusable-actions
-          ref: main
+          repository: heliomarpm/actions-flow
+          ref: ${{ github.ref }}
           path: ${{ env.REUSABLE_PATH }}
 
       - name: 📐 Resolve project path

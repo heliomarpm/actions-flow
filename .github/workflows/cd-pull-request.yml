@@ -396,12 +396,12 @@ jobs:
         cat <<EOF >> $GITHUB_STEP_SUMMARY
         ## 🔀 Auto Pull Request
 
-        **Status:** ${{ steps.create-pr.outputs.pr_action || 'processed' }}
+        **Status:** \ `${{ steps.create-pr.outputs.pr_action || 'processed' }}\`
 
         **From:** \`${{ needs.resolve-branch.outputs.head }}\`  
         **To:** \`${{ needs.resolve-branch.outputs.base }}\`
 
-        **Coverage:** ${{ needs.read-quality.outputs.status }}
+        **Coverage:** \`${{ needs.read-quality.outputs.status }}\`
 
         echo ""        
         echo "| Metric | Value |"
@@ -411,7 +411,7 @@ jobs:
         echo "| Delta Δ | ${{ needs.read-quality.outputs.delta }} |"
         echo "| Minimum | ${{ needs.read-quality.outputs.min }}% |"
         echo "| Mode | \`${{ needs.read-quality.outputs.mode }}\` |"
-        echo "| Status | **${{ needs.read-quality.outputs.status }}** |"
+        echo "| Status | \`${{ needs.read-quality.outputs.status }}\` |"
         echo ""
         if [ -n "${{ needs.read-quality.outputs.reason }}" ]; then
           echo "**Reason:** ${{ needs.read-quality.outputs.reason }}"
@@ -419,7 +419,7 @@ jobs:
 
         echo ""
 
-        🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || 'failed' }}
+        🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || \`failed\` }}
 
         ---
         _Gerado automaticamente pela action **auto-pr**_

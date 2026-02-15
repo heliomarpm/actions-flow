@@ -319,20 +319,20 @@ jobs:
             if [[ "${{ steps.stack.outputs.value }}" != "" ]]; then
               echo "**🧱 Stack:** \`${{ steps.stack.outputs.value }}\` (_${{ steps.stack.outputs.source }}_)"
             else
-              echo "**🧱 Stack:** ❌ not detected"
+              echo "**🧱 Stack:** ❌ \`not detected\`"
             fi
 
             echo ""
             if [[ "${{ steps.eval-coverage.outputs.status }}" == "passed" ]]; then
               if [[ -n "${{ steps.eval-coverage.outputs.line }}" ]]; then
-                echo "**📊 Coverage:** ${{ steps.eval-coverage.outputs.line }}%"
+                echo "**📊 Coverage:** \`${{ steps.eval-coverage.outputs.line }}%"\`
               else
-                echo "**📊 Coverage:** executed (no summary produced) | mode: ${{ steps.eval-coverage.outputs.mode }}"
+                echo "**📊 Coverage:** \`executed\` (no summary produced) | mode: \`${{ steps.eval-coverage.outputs.mode }}"\`
               fi
             elif [[ "${{ steps.eval-coverage.outputs.status }}" == "failed" ]]; then
-              echo "**📊 Coverage:** failed | mode: ${{ steps.eval-coverage.outputs.mode }}"
+              echo "**📊 Coverage:** \`failed\` | mode: \`${{ steps.eval-coverage.outputs.mode }}"\`
             else
-              echo "**📊 Coverage:** not executed | mode: ${{ steps.eval-coverage.outputs.mode }}"
+              echo "**📊 Coverage:** \`not executed\` | mode: \`${{ steps.eval-coverage.outputs.mode }}"\`
             fi
 
             echo ""
@@ -343,7 +343,7 @@ jobs:
             echo "| Delta Δ | ${{ steps.eval-coverage.outputs.delta }} |"
             echo "| Minimum | ${{ steps.eval-coverage.outputs.min }}% |"
             echo "| Mode | \`${{ steps.eval-coverage.outputs.mode }}\` |"
-            echo "| Status | **${{ steps.eval-coverage.outputs.status }}** |"
+            echo "| Status | \`${{ steps.eval-coverage.outputs.status }}\` |"
             
             echo ""
             if [ -n "${{ steps.eval-coverage.outputs.reason }}" ]; then

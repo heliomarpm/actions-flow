@@ -24,7 +24,7 @@ IS_DRY_RUN="${DRY_RUN:-false}"
 IS_DEBUG_MODE="${DEBUG_MODE:-false}"
 STRICT_MODE="${STRICT_CONVENTIONAL_COMMITS:-false}"
 
-DEFAULT_CONFIG="./$REUSABLE_PATH/scripts/plugins/$STACK/releaserc.json"
+DEFAULT_CONFIG="$REUSABLE_PATH/scripts/plugins/$STACK/releaserc.json"
 STRICT_TEMPLATE="$REUSABLE_PATH/templates/strict-mode-error.md"
 
 

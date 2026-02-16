@@ -337,7 +337,7 @@ jobs:
 
         ${COVERAGE_BLOCK}          
 
-        $INTERPRETATION
+        #### _$INTERPRETATION_
         ---
         _Gerado automaticamente pela action **auto-pr**_
         EOF
@@ -412,6 +412,7 @@ jobs:
         **To:** \`${{ needs.resolve-branch.outputs.base }}\`
 
         **Coverage:** \`${{ needs.read-quality.outputs.status }}\`
+        **Reason:** ${{ needs.read-quality.outputs.reason }}
         
         | Metric      | Value                                       |
         |------------ |-------------------------------------------- |
@@ -421,11 +422,7 @@ jobs:
         | Minimum     | ${{ needs.read-quality.outputs.min }}%      |
         | Mode        | \`${{ needs.read-quality.outputs.mode }}\`  |
         | Status      | \`${{ needs.read-quality.outputs.status }}\`|
-        
-        if [ -n "${{ needs.read-quality.outputs.reason }}" ]; then
-          **Reason:** ${{ needs.read-quality.outputs.reason }}
-        fi
-
+                
         🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || '<failed>' }}
 
         ---

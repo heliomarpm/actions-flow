@@ -336,21 +336,22 @@ jobs:
             fi
 
             echo ""
-            echo "| Metric | Value |"
-            echo "|--------|--------|"
-            echo "| Base Branch | ${{ steps.eval-coverage.outputs.base }}% |"
-            echo "| Coverage | **${{ steps.eval-coverage.outputs.line }}%** |"
-            echo "| Delta Δ | ${{ steps.eval-coverage.outputs.delta }} |"
-            echo "| Minimum | ${{ steps.eval-coverage.outputs.min }}% |"
-            echo "| Mode | \`${{ steps.eval-coverage.outputs.mode }}\` |"
-            echo "| Status | \`${{ steps.eval-coverage.outputs.status }}\` |"
-            
-            echo ""
             if [ -n "${{ steps.eval-coverage.outputs.reason }}" ]; then
               echo "**Reason:** ${{ steps.eval-coverage.outputs.reason }}"
             fi
 
+            echo ""
+            echo "| Metric      | Value                                       |"
+            echo "|------------ |-------------------------------------------- |"
+            echo "| Base Branch | ${{ steps.eval-coverage.outputs.base }}%    |"
+            echo "| Coverage    | **${{ steps.eval-coverage.outputs.line }}%**|"
+            echo "| Delta Δ     | ${{ steps.eval-coverage.outputs.delta }}    |"
+            echo "| Minimum     | ${{ steps.eval-coverage.outputs.min }}%     |"
+            echo "| Mode        | \`${{ steps.eval-coverage.outputs.mode }}\` |"
+            echo "| Status      | \`${{ steps.eval-coverage.outputs.status }}\` |"
+            
             if [ -f "${{ env.NORMALIZED_COVERAGE }}" ]; then
+              echo ""
               echo "**📦 Artifacts:** coverage-report"
             fi
           } >> $GITHUB_STEP_SUMMARY

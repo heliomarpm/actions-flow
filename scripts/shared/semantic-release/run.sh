@@ -24,24 +24,16 @@ IS_DRY_RUN="${DRY_RUN:-false}"
 IS_DEBUG_MODE="${DEBUG_MODE:-false}"
 STRICT_MODE="${STRICT_CONVENTIONAL_COMMITS:-false}"
 
-CUSTOM_CONFIG_PATH=$(bash "$REUSABLE_PATH/scripts/shared/semantic-release/resolve-custom-releaserc.sh" "${CUSTOM_CONFIG:-}")
 DEFAULT_CONFIG="./$REUSABLE_PATH/scripts/plugins/$STACK/releaserc.json"
 STRICT_TEMPLATE="$REUSABLE_PATH/templates/strict-mode-error.md"
-
-bash "$REUSABLE_PATH/scripts/shared/semantic-release/install.sh"
 
 # ------------------------------------------------------------
 # Build semantic-release command
 # ------------------------------------------------------------
 build_cmd() {
   local CMD="npx semantic-release"
-
-  if [[ -n "$CUSTOM_CONFIG_PATH" ]]; then
-    log "Running semantic-release with consumer config"
-    CMD+=" --extends $CUSTOM_CONFIG_PATH"
-  else
-    [[ -f "$DEFAULT_CONFIG" ]] || fail "Default config not found for stack: $STACK"
-
+  
+  if [[ -n "$DEFAULT_CONFIG" ]]; then
     log "Running semantic-release with default config"
     CMD+=" --extends $DEFAULT_CONFIG"
   fi
@@ -50,13 +42,7 @@ build_cmd() {
     log "Debug mode enabled"
     CMD+=" --debug"
   fi
-
-  log "Custom Path detected: $CUSTOM_CONFIG_PATH"
-  log "Default Path detected: $DEFAULT_CONFIG"
-  log "Dry run enabled: $IS_DRY_RUN"
-  log "Strict Mode enabled: $STRICT_MODE"
-  log "Command: $CMD"
-  
+ 
   echo "$CMD" 
 }
 
@@ -113,7 +99,8 @@ run() {
     log "Dry-run enabled"
     CMD+=" --dry-run"
   fi
-  
+
+  echo "===================================================="
   log "🚀 Running: $CMD"
   eval "$CMD"  
 }

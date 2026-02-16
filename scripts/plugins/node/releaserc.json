@@ -29,8 +29,8 @@
     [
       "@semantic-release/github", 
       { 
-        "successComment": false,
-        "failComment": false,
+        "successComment": "🎉 Release `${nextRelease.version}` publicada com sucesso!",
+        "failComment": "⚠️ Falha ao publicar release, verifique os logs.",
         "assets": [
           { "path": "dist/**", "label": "Build" },
           { "path": "coverage/**", "label": "Coverage Report" }

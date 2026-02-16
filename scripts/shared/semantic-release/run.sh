@@ -18,14 +18,14 @@ fail() {
 # ------------------------------------------------------------
 # Environments
 # ------------------------------------------------------------
-REUSABLE_PATH="${REUSABLE_PATH:-.}"
+REUSABLE_PATH="${REUSABLE_PATH:-__reusable_files__}"
 STACK="${STACK:-node}"
-IS_DRY_RUN="${DRY_RUN:-false}"
-IS_DEBUG_MODE="${DEBUG_MODE:-false}"
-STRICT_MODE="${STRICT_CONVENTIONAL_COMMITS:-false}"
+IS_DRY_RUN="${IS_DRY_RUN:-false}"
+IS_DEBUG="${IS_DEBUG:-false}"
+IS_STRICT_MODE="${IS_STRICT_MODE:-false}"
 
 DEFAULT_CONFIG="$REUSABLE_PATH/scripts/plugins/$STACK/releaserc.json"
-STRICT_TEMPLATE="$REUSABLE_PATH/templates/strict-mode-error.md"
+STRICT_TEMPLATE="$REUSABLE_PATH/templates/strict-conventional-error.md"
 
 
 # ------------------------------------------------------------
@@ -35,7 +35,7 @@ build_cmd() {
   local CMD="npx semantic-release"
   
   [[ -n "$DEFAULT_CONFIG" ]] && CMD+=" --extends $DEFAULT_CONFIG"
-  [[ "$IS_DEBUG_MODE" == "true" ]] && CMD+=" --debug"
+  [[ "$IS_DEBUG" == "true" ]] && CMD+=" --debug"
  
   echo "$CMD" 
 }
@@ -43,7 +43,7 @@ build_cmd() {
 # ------------------------------------------------------------
 # STRICT MODE — Enforce conventional commits
 # ------------------------------------------------------------
-strict_mode() {
+IS_STRICT_MODE() {
   local STRICT_CMD="${1:-npx semantic-release} --dry-run"
   
   echo "===================================================="
@@ -91,8 +91,8 @@ run() {
 
   local CMD=$(build_cmd)
 
-  if [[ "$STRICT_MODE" == "true" ]]; then
-    strict_mode "$CMD"
+  if [[ "$IS_STRICT_MODE" == "true" ]]; then
+    IS_STRICT_MODE "$CMD"
   fi
 
   if [[ "$IS_DRY_RUN" == "true" || "${GITHUB_EVENT_NAME:-}" == "pull_request" ]]; then

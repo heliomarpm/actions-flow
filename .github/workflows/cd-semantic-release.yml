@@ -19,7 +19,7 @@ on:
         required: false
         type: boolean
         default: false
-      debug_mode:
+      debug:
         description: 'Debug mode for semantic-release.'
         required: false
         type: boolean
@@ -38,8 +38,8 @@ jobs:
   semantic-release:
     runs-on: ubuntu-latest
     env:
-      REUSABLE_PATH: ${{ github.workspace }}/__reusable_flow__
-      BASH_ENV: ${{ github.workspace }}/__reusable_flow__/scripts/shared/shell-helpers.sh
+      REUSABLE_PATH: ${{ github.workspace }}/__reusable_files__
+      BASH_ENV: ${{ github.workspace }}/__reusable_files__/scripts/shared/shell-helpers.sh
 
     # defaults:
     #   run:
@@ -53,89 +53,89 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: 📌 Checkout consumer repository
-        uses: actions/checkout@v4
-        with:
-          # A linha 'ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 0 # Necessário para o semantic-release inspecionar histórico
-          fetch-tags: true # Necessário para o semantic-release inspecionar tags
-          persist-credentials: true # → permite push com GITHUB_TOKEN
-          token: ${{ secrets.GH_TOKEN }} # Necessário para autenticar PUSH
+    - name: 📌 Checkout consumer repository
+      uses: actions/checkout@v4
+      with:
+        # A linha 'ref: ${{ github.event.workflow_run.head_sha }}
+        fetch-depth: 0 # Necessário para o semantic-release inspecionar histórico
+        fetch-tags: true # Necessário para o semantic-release inspecionar tags
+        persist-credentials: true # → permite push com GITHUB_TOKEN
+        token: ${{ secrets.GH_TOKEN }} # Necessário para autenticar PUSH
 
-      - name: 📌 Checkout reusable repository
-        uses: actions/checkout@v4
-        with:
-          repository: heliomarpm/actions-flow
-          ref: main # ${{ github.ref }}
-          path: ${{ env.REUSABLE_PATH }}
+    - name: 📌 Checkout reusable repository
+      uses: actions/checkout@v4
+      with:
+        repository: heliomarpm/actions-flow
+        ref: main # ${{ github.ref }}
+        path: ${{ env.REUSABLE_PATH }}
 
-      - name: 📐 Resolve project path
-        id: path
-        run: |
-          PROJECT_PATH="$(resolve_project_path '${{ inputs.project_path }}')"
-          log "🔹 Using project path: $PROJECT_PATH"
-          echo "value=$PROJECT_PATH" >> "$GITHUB_OUTPUT"
+    - name: 📐 Resolve project path
+      id: path
+      run: |
+        PROJECT_PATH="$(resolve_project_path '${{ inputs.project_path }}')"
+        log "🔹 Using project path: $PROJECT_PATH"
+        echo "value=$PROJECT_PATH" >> "$GITHUB_OUTPUT"
 
-      - name: 👀 Files in workspace
-        run: |
-          ls_files
+    - name: 👀 Files in workspace
+      run: |
+        ls_files
 
-      - name: 🔍 Resolve project stack
-        id: stack
-        working-directory: ${{ steps.path.outputs.value }}
-        run: |
-          STACK="${{ inputs.stack }}"
-          if [[ -n "$STACK" && "$STACK" != "auto" ]]; then
-            echo "🔹 Using stack from input: $STACK"
-            echo "value=$STACK" >> $GITHUB_OUTPUT
-            echo "source=input" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          SCRIPT="$REUSABLE_PATH/scripts/shared/detect-stack.sh"
-          chmod +x "$SCRIPT"
-          STACK=$("$SCRIPT" "${{ steps.path.outputs.value }}")
-
+    - name: 🔍 Resolve project stack
+      id: stack
+      working-directory: ${{ steps.path.outputs.value }}
+      run: |
+        STACK="${{ inputs.stack }}"
+        if [[ -n "$STACK" && "$STACK" != "auto" ]]; then
+          echo "🔹 Using stack from input: $STACK"
           echo "value=$STACK" >> $GITHUB_OUTPUT
-          echo "source=detected" >> $GITHUB_OUTPUT
+          echo "source=input" >> $GITHUB_OUTPUT
+          exit 0
+        fi
 
-      - name: ❌ Fail if stack not detected
-        if: steps.stack.outputs.value == ''
-        run: fail "Stack not detected. Check project_path or repository structure."
+        SCRIPT="$REUSABLE_PATH/scripts/shared/detect-stack.sh"
+        chmod +x "$SCRIPT"
+        STACK=$("$SCRIPT" "${{ steps.path.outputs.value }}")
 
-      - name: ⚙️ Configurar Usuário Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+        echo "value=$STACK" >> $GITHUB_OUTPUT
+        echo "source=detected" >> $GITHUB_OUTPUT
 
-      - name: 🚀 Run Semantic Release
-        if: steps.stack.outputs.value != ''
-        # working-directory: ${{ github.workspace }}
-        working-directory: ${{ steps.path.outputs.value }}
-        run: |
-          SCRIPT="$REUSABLE_PATH/scripts/shared/semantic-release/run.sh"
-          chmod +x "$SCRIPT"
-          "$SCRIPT"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          STACK: ${{ steps.stack.outputs.value }}
-          REUSABLE_PATH: ${{ env.REUSABLE_PATH }}
-          DRY_RUN: ${{ inputs.dry_run }}
-          DEBUG_MODE: ${{ inputs.debug_mode }}
-          STRICT_CONVENTIONAL_COMMITS: ${{ inputs.strict_conventional_commits }}
+    - name: ❌ Fail if stack not detected
+      if: steps.stack.outputs.value == ''
+      run: fail "Stack not detected. Check project_path or repository structure."
 
-      - name: 🧾 Job Summary
-        if: always()
-        run: |
-          {
-            echo "## 📌 Semantic Release"
-            echo ""
-            echo "**📂 Project path:** \`${{ inputs.project_path }}\`"
-            echo ""
+    - name: ⚙️ Configurar Usuário Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
 
-            if [[ "${{ steps.stack.outputs.value }}" != "" ]]; then
-              echo "**🧱 Stack:** \`${{ steps.stack.outputs.value }}\` (_${{ steps.stack.outputs.source }}_)"
-            else
-              echo "**🧱 Stack:** ❌ not detected"
-            fi
-          } >> $GITHUB_STEP_SUMMARY
+    - name: 🚀 Run Semantic Release
+      if: steps.stack.outputs.value != ''
+      # working-directory: ${{ github.workspace }}
+      working-directory: ${{ steps.path.outputs.value }}
+      run: |
+        SCRIPT="$REUSABLE_PATH/scripts/shared/semantic-release/run.sh"
+        chmod +x "$SCRIPT"
+        "$SCRIPT"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        REUSABLE_PATH: ${{ env.REUSABLE_PATH }}
+        STACK: ${{ steps.stack.outputs.value }}
+        IS_DRY_RUN: ${{ inputs.dry_run }}
+        IS_DEBUG: ${{ inputs.debug }}
+        IS_STRICT_MODE: ${{ inputs.strict_conventional_commits }}
+
+    - name: 🧾 Job Summary
+      if: always()
+      run: |
+        {
+          echo "## 📌 Semantic Release"
+          echo ""
+          echo "**📂 Project path:** \`${{ inputs.project_path }}\`"
+          echo ""
+
+          if [[ "${{ steps.stack.outputs.value }}" != "" ]]; then
+            echo "**🧱 Stack:** \`${{ steps.stack.outputs.value }}\` (_${{ steps.stack.outputs.source }}_)"
+          else
+            echo "**🧱 Stack:** ❌ not detected"
+          fi
+        } >> $GITHUB_STEP_SUMMARY

@@ -157,7 +157,7 @@ jobs:
       id: base-coverage
       # if: inputs.coverage_mode == 'decrease'
       run: |
-        BASE_REF="${{ github.base_ref }}"
+        BASE_REF="${{ github.base_ref || github.ref_name  }}"
 
         if [ -z "$BASE_REF" ]; then
           log "No base ref detected (not a PR). Skipping."

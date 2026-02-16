@@ -164,7 +164,7 @@ jobs:
       run: |
         BASE_REF="${{ github.base_ref || inputs.base_branch }}"
 
-        log "Base branch: ${{ github.base_ref }}"
+        log "Base branch: $BASE_REF"
 
         if [ -z "$BASE_REF" ]; then
           log "No base ref detected (not a PR). Skipping."

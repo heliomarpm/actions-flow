@@ -155,7 +155,7 @@ jobs:
 
     - name: 📉 Get base branch coverage (for decrease mode)
       id: base-coverage
-      if: inputs.coverage_mode == 'decrease'
+      # if: inputs.coverage_mode == 'decrease'
       run: |
         BASE_REF="${{ github.base_ref }}"
 

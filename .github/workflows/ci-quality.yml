@@ -290,7 +290,7 @@ jobs:
               }
             };
 
-            conclusion = "success"; //result.status === "failed" ? "failure" : "success";
+            conclusion = result.status === "failed" ? "failure" : "success";
 
             await github.rest.checks.create({
               owner: context.repo.owner,

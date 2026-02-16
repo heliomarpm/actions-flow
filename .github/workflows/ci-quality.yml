@@ -18,6 +18,11 @@ on:
         required: false
         type: boolean
         default: false
+      base_branch:
+        description: 'Base branch for coverage (default: main)'
+        required: false
+        type: string
+        default: "main"
 
       coverage_strategy:
         description: 'Coverage strategy (custom | empty for auto-detect)'
@@ -157,7 +162,9 @@ jobs:
       id: base-coverage
       # if: inputs.coverage_mode == 'decrease'
       run: |
-        BASE_REF="${{ github.base_ref || github.ref_name  }}"
+        BASE_REF="${{ github.base_ref || inputs.base_branch }}"
+
+        log "Base branch: ${{ github.base_ref }}"
 
         if [ -z "$BASE_REF" ]; then
           log "No base ref detected (not a PR). Skipping."

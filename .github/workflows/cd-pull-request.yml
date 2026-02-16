@@ -97,8 +97,14 @@ jobs:
             return;
           }
 
-          const json = check.output.text.match(/```json\n([\s\S]*)\n```/)[1];
-          const data = JSON.parse(json);
+          const match = check.output.text?.match(/```json\n([\s\S]*?)\n```/);
+
+          if (!match) {
+            core.setOutput("status", "missing");
+            return;
+          }
+
+          const data = JSON.parse(match[1]);
 
           core.setOutput("line", data.coverage.line);
           core.setOutput("base", data.coverage.base);
@@ -110,103 +116,10 @@ jobs:
 
           console.log("📊 Coverage: ", data.coverage);
 
-    # read-coverage:
-    #   needs: resolve-branch
-    #   if: needs.resolve-branch.outputs.skip != 'true'
-    #   runs-on: ubuntu-latest
-
-    #   env:
-    #     REUSABLE_PATH: ${{ github.workspace }}/__reusable_flow__
-    #     BASH_ENV: ${{ github.workspace }}/__reusable_flow__/scripts/shared/shell-helpers.sh
-
-    #   # outputs:
-    #   #   line: ${{ steps.coverage.outputs.line }}
-    #   #   status: ${{ steps.eval-coverage.outputs.status }}
-
-    #   outputs:
-    #     line: ${{ steps.coverage.outputs.line }}
-    #     status: ${{ steps.coverage.outputs.status }}
-    #     min: ${{ steps.coverage.outputs.min }}
-    #     mode: ${{ steps.coverage.outputs.mode }}
-
-    #   steps:
-    #   - name: 📥 Download coverage artifact
-    #     uses: actions/download-artifact@v4
-    #     continue-on-error: true
-    #     with:
-    #       pattern: coverage-*
-    #       path: ${{ github.workspace }}/coverage
-    #       merge-multiple: true
-
-    #   - name: 📊 Read coverage report
-    #     id: coverage
-    #     run: |
-    #       FILE=$(find coverage -name coverage-summary.normalized.json | head -n 1)
-
-    #       if [ -z "$FILE" ]; then
-    #         echo "base=0" >> $GITHUB_OUTPUT
-    #         echo "line=0" >> $GITHUB_OUTPUT
-    #         echo "delta=➖" >> $GITHUB_OUTPUT
-    #         echo "min=0" >> $GITHUB_OUTPUT
-    #         echo "status=missing" >> $GITHUB_OUTPUT
-    #         echo "mode=info" >> $GITHUB_OUTPUT
-    #         echo "reason=not-found" >> $GITHUB_OUTPUT
-    #         exit 0
-    #       fi
-
-    #       BASE_LINE=$(jq '.base' "$FILE")
-    #       LINE=$(jq '.line' "$FILE")
-    #       DELTA=$(jq -r '.delta' "$FILE")
-    #       MIN=$(jq '.min' "$FILE")
-    #       STATUS=$(jq -r '.status' "$FILE")
-    #       MODE=$(jq -r '.mode' "$FILE")
-    #       REASON=$(jq -r '.reason' "$FILE")
-
-    #       echo "base=$BASE_LINE" >> $GITHUB_OUTPUT
-    #       echo "line=$LINE" >> $GITHUB_OUTPUT
-    #       echo "delta=$DELTA" >> $GITHUB_OUTPUT
-    #       echo "min=$MIN" >> $GITHUB_OUTPUT
-    #       echo "status=$STATUS" >> $GITHUB_OUTPUT
-    #       echo "mode=$MODE" >> $GITHUB_OUTPUT
-    #       echo "reason=$REASON" >> $GITHUB_OUTPUT
-
-    # - name: ✅ Evaluate coverage
-    #   id: eval-coverage
-    #   run: |
-    #     REPORT="${{ steps.coverage.outputs.report }}"
-    #     LINE=${{ steps.coverage.outputs.line || 0 }}
-    #     MIN=${{ inputs.coverage_min || 0 }}
-    #     MODE="${{ inputs.coverage_mode }}"
-
-    #     echo "→ Minimum coverage: $MIN%"
-    #     echo "→ Coverage mode: $MODE"
-
-    #     FINAL_STATUS="passed"
-
-    #     if [ "$REPORT" = "not-found" ]; then
-    #       FINAL_STATUS="missing"
-    #       echo "⚠️ No tests or coverage detected"
-
-    #       if [ "$MODE" = "block" ]; then
-    #         fail "❌ Blocking PR: tests not implemented"
-    #       fi
-    #     elif [ "$LINE" -lt "$MIN" ]; then
-    #       FINAL_STATUS="failed"
-    #       MSG="❌ Coverage below threshold ($LINE < $MIN)"
-
-    #       if [ "$MODE" = "block" ]; then
-    #         fail "$MSG"
-    #       fi
-
-    #       echo "$MSG"
-    #     fi
-
-    #     echo "status=$FINAL_STATUS" >> $GITHUB_OUTPUT
-
   auto-pr:
     needs:
-    - resolve-branch
-    - read-quality
+      - resolve-branch
+      - read-quality
     if: needs.resolve-branch.outputs.skip != 'true'
     runs-on: ubuntu-latest
 
@@ -215,216 +128,229 @@ jobs:
       BASH_ENV: ${{ github.workspace }}/__reusable_flow__/scripts/shared/shell-helpers.sh
 
     steps:
-    - name: 📌 Checkout consumer repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0 # Necessário para evitar falhas do gh CLI em repositórios grandes
-        token: ${{ secrets.GH_TOKEN }} # Necessário se o repositório for privado
+      - name: 📌 Checkout consumer repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Necessário para evitar falhas do gh CLI em repositórios grandes
+          token: ${{ secrets.GH_TOKEN }} # Necessário se o repositório for privado
 
-    - name: 📌 Checkout reusable repository
-      uses: actions/checkout@v4
-      with:
-        repository: heliomarpm/actions-flow
-        ref: main # ${{ github.ref }}
-        path: ${{ env.REUSABLE_PATH }}
+      - name: 📌 Checkout reusable repository
+        uses: actions/checkout@v4
+        with:
+          repository: heliomarpm/actions-flow
+          ref: main
+          path: ${{ env.REUSABLE_PATH }}
+          fetch-depth: 1
 
-    - name: 🔐 Auth GitHub CLI
-      run: |
-        # echo "${GITHUB_TOKEN}" | gh auth login --with-token
-        gh auth setup-git
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      # -------------------------------------------------
+      # Garantir que o remote do repo consumidor está correto
+      # -------------------------------------------------
+      - name: 🔐 Fix git remote
+        run: |
+          git remote set-url origin https://github.com/${GITHUB_REPOSITORY}.git
+          git fetch origin --prune
+          git remote -v
 
-    - name: 🔎 Ensure Destination Branch
-      if: needs.resolve-branch.outputs.skip != 'true'
-      run: |
-        BASE="${{ needs.resolve-branch.outputs.base }}"
+      # - name: 🔐 Auth GitHub CLI
+      #   run: |
+      #     # echo "${GITHUB_TOKEN}" | gh auth login --with-token
+      #     gh auth setup-git
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-        if ! git ls-remote --exit-code --heads origin "$BASE" > /dev/null 2>&1; then
-          {
-            echo "## ❌ Invalid destination branch"
-            echo ""
-            echo "Branch `$BASE` does not exist."
-            echo ""
-            echo "### Available branches:"
-            git ls-remote --heads origin | awk '{print $2}' | sed 's|refs/heads/||'
-          } >> "$GITHUB_STEP_SUMMARY"
+      # -------------------------------------------------
+      # Validar branch destino de forma determinística
+      # -------------------------------------------------
+      - name: 🔎 Ensure Destination Branch
+        if: needs.resolve-branch.outputs.skip != 'true'
+        run: |
+          set -e
 
-          echo "Expected branch: $BASE"
-          exit 1
-        fi
+          BASE="${{ needs.resolve-branch.outputs.base }}"
 
-    - name: 🏷 Ensure auto-generated label exists
-      if: needs.resolve-branch.outputs.skip != 'true'
-      run: |
-        ensure_label "auto-generated" "Pull Request criada automaticamente" 006B75
-        ensure_label "coverage-failed" "Cobertura de testes abaixo do limite mínimo" D93F0B
-        ensure_label "coverage-passed" "Cobertura de testes adequado" 0E8A16
-        ensure_label "coverage-missing" "Sem testes ou cobertura de testes" E99695
+          log "Checking branch: $BASE"
 
-        # gh label create auto-generated --description "Pull Request criada automaticamente" --color 006B75 || true
-        # gh label create "coverage-failed" --description "Cobertura de testes abaixo do limite mínimo." --color "D93F0B" || true
-        # gh label create "coverage-passed" --description "Cobertura de testes acima do limite mínimo." --color "0E8A16" || true
-        # gh label create "coverage-missing" --description "Cobertura de testes não encontrada." --color "E99695" || true
+          if ! git show-ref --verify --quiet "refs/remotes/origin/$BASE"; then
+            {
+              echo "## ❌ Invalid destination branch"
+              echo ""
+              echo "Branch \`$BASE\` does not exist in repository."
+              echo ""
+              echo "### Available branches:"
+              # git branch -r
+              git ls-remote --heads origin | awk '{print $2}' | sed 's|refs/heads/||'
+            } >> "$GITHUB_STEP_SUMMARY"
 
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+            log "Expected branch: $BASE"
+            exit 1
+          fi
 
-    - name: 📝 Generate PR body
-      if: needs.resolve-branch.outputs.skip != 'true'
-      run: |
-        COV_BASE="${{ needs.read-quality.outputs.base }}"
-        COV_LINE="${{ needs.read-quality.outputs.line }}"
-        COV_DELTA="${{ needs.read-quality.outputs.delta }}"
-        COV_MIN="${{ needs.read-quality.outputs.min }}"
-        COV_STATUS="${{ needs.read-quality.outputs.status }}"
-        COV_MODE="${{ needs.read-quality.outputs.mode }}"
-        COV_REASON="${{ needs.read-quality.outputs.reason }}"
 
-        echo "COV_BASE=$COV_BASE"
-        echo "COV_LINE=$COV_LINE"
-        echo "COV_DELTA=$COV_DELTA"
-        echo "COV_MIN=$COV_MIN"
-        echo "COV_STATUS=$COV_STATUS"
-        echo "COV_MODE=$COV_MODE"
-        echo "COV_REASON=$COV_REASON"
+      - name: 🏷 Ensure labels exist
+        if: needs.resolve-branch.outputs.skip != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          ensure_label "auto-generated" "Pull Request criada automaticamente" 006B75
+          ensure_label "coverage-failed" "Cobertura de testes abaixo do limite mínimo" D93F0B
+          ensure_label "coverage-passed" "Cobertura de testes adequado" 0E8A16
+          ensure_label "coverage-missing" "Sem testes ou cobertura de testes" E99695
 
-        TITLE="📊 Cobertura de Testes"
+      - name: 📝 Generate PR body
+        if: needs.resolve-branch.outputs.skip != 'true'
+        run: |
+          COV_BASE="${{ needs.read-quality.outputs.base }}"
+          COV_LINE="${{ needs.read-quality.outputs.line }}"
+          COV_DELTA="${{ needs.read-quality.outputs.delta }}"
+          COV_MIN="${{ needs.read-quality.outputs.min }}"
+          COV_STATUS="${{ needs.read-quality.outputs.status }}"
+          COV_MODE="${{ needs.read-quality.outputs.mode }}"
+          COV_REASON="${{ needs.read-quality.outputs.reason }}"
 
-        if [ "$COV_STATUS" = "passed" ]; then
-          INTERPRETATION="A cobertura está **de acordo** com o limite exigido."
-        elif [ "$COV_STATUS" = "failed" ]; then
-          INTERPRETATION="A cobertura está **abaixo** do limite mínimo. Adicione testes antes de mesclar." 
-        else
-          INTERPRETATION="Nenhum teste ou relatório de cobertura foi detectado nesta execução." 
-        fi
+          echo "COV_BASE=$COV_BASE"
+          echo "COV_LINE=$COV_LINE"
+          echo "COV_DELTA=$COV_DELTA"
+          echo "COV_MIN=$COV_MIN"
+          echo "COV_STATUS=$COV_STATUS"
+          echo "COV_MODE=$COV_MODE"
+          echo "COV_REASON=$COV_REASON"
 
-        if [ -n "$COV_LINE" ]; then
-          COVERAGE_BLOCK=$(cat <<EOF
-        ### $TITLE
+          TITLE="📊 Cobertura de Testes"
 
-        | Métrica | Valor  |
-        |-------- |------- |
-        | Branch Base  | **$COV_BASE%** |
-        | Linhas  | **$COV_LINE%** |
-        | Delta  | $COV_DELTA |
-        | Mínimo requerido | $COV_MIN% |
-        | Modo | \`$COV_MODE\` |
-        | Status | **$COV_STATUS** |
+          if [ "$COV_STATUS" = "passed" ]; then
+            INTERPRETATION="A cobertura está **de acordo** com o limite exigido."
+          elif [ "$COV_STATUS" = "failed" ]; then
+            INTERPRETATION="A cobertura está **abaixo** do limite mínimo. Adicione testes antes de mesclar." 
+          else
+            INTERPRETATION="Nenhum teste ou relatório de cobertura foi detectado nesta execução." 
+          fi
 
-        EOF
-        )
+          if [ -n "$COV_LINE" ]; then
+            COVERAGE_BLOCK=$(cat <<EOF
+          ### $TITLE
 
-        else
-          COVERAGE_BLOCK=$(cat <<EOF
-        ### $TITLE
+          | Métrica | Valor  |
+          |-------- |------- |
+          | Branch Base  | **$COV_BASE%** |
+          | Linhas  | **$COV_LINE%** |
+          | Delta  | $COV_DELTA |
+          | Mínimo requerido | $COV_MIN% |
+          | Modo | \`$COV_MODE\` |
+          | Status | **$COV_STATUS** |
 
-        ⚠️ Cobertura não gerada para este projeto.
-        EOF
-        )
-        fi
+          EOF
+          )
 
-        cat <<EOF > pr_body.md
+          else
+            COVERAGE_BLOCK=$(cat <<EOF
+          ### $TITLE
 
-        ## 🤖 Pull Request Automática
+          ⚠️ Cobertura não gerada para este projeto.
+          EOF
+          )
+          fi
 
-        Esta PR foi criada ou atualizada automaticamente.
+          cat <<EOF > pr_body.md
 
-        **Origem:** \`${{ needs.resolve-branch.outputs.head }}\`  
-        **Destino:** \`${{ needs.resolve-branch.outputs.base }}\`
+          ## 🤖 Pull Request Automática
 
-        ---
+          Esta PR foi criada ou atualizada automaticamente.
 
-        ${COVERAGE_BLOCK}
+          **Origem:** \`${{ needs.resolve-branch.outputs.head }}\`  
+          **Destino:** \`${{ needs.resolve-branch.outputs.base }}\`
 
-        #### $INTERPRETATION
-        ---
-        _Gerado automaticamente pela action **auto-pr**_
-        EOF
+          ---
 
-    - name: 📜 Create or Update Pull Request
-      id: create-pr
-      run: |
-        HEAD="${{ needs.resolve-branch.outputs.head }}"
-        BASE="${{ needs.resolve-branch.outputs.base }}"
-        TITLE="🔀 PR ($(date +'%Y-%m-%d')): ${HEAD} → ${BASE}"
-        STATUS_COVERAGE="${{ needs.read-quality.outputs.status }}"
+          ${COVERAGE_BLOCK}
 
-        if [ "$STATUS_COVERAGE" = "failed" ]; then
-          ADD_LABEL="coverage-failed"
-          DEL_LABEL="coverage-passed,coverage-missing"
-        elif [ "$STATUS_COVERAGE" = "passed" ]; then
-          ADD_LABEL="coverage-passed"
-          DEL_LABEL="coverage-failed,coverage-missing"
-        elif [ "$STATUS_COVERAGE" = "missing" ]; then
-          ADD_LABEL="coverage-missing"
-          DEL_LABEL="coverage-passed,coverage-failed"
-        fi
+          #### $INTERPRETATION
+          ---
+          _Gerado automaticamente pela action **auto-pr**_
+          EOF
 
-        # Tenta encontrar um PR existente
-        PR_NUMBER=$(gh pr list --base "$BASE" --head "$HEAD" --json number --jq '.[0].number')
+      - name: 📜 Create or Update Pull Request
+        id: create-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -e
 
-        echo "$TITLE"
+          HEAD="${{ needs.resolve-branch.outputs.head }}"
+          BASE="${{ needs.resolve-branch.outputs.base }}"
+          TITLE="🔀 PR ($(date +'%Y-%m-%d')): ${HEAD} → ${BASE}"
 
-        if [ -z "$PR_NUMBER" ]; then
-          echo "→ No existing PR found. Creating new PR..."
-          gh pr create \
-            --base "$BASE" \
-            --head "$HEAD" \
-            --title "$TITLE" \
-            --body-file pr_body.md \
-            --label "auto-generated,$ADD_LABEL" \
-            --assignee "${{ github.actor }}"
+          STATUS_COVERAGE="${{ needs.read-quality.outputs.status }}"
+          if [ "$STATUS_COVERAGE" = "failed" ]; then
+            ADD_LABEL="coverage-failed"
+            DEL_LABEL="coverage-passed,coverage-missing"
+          elif [ "$STATUS_COVERAGE" = "passed" ]; then
+            ADD_LABEL="coverage-passed"
+            DEL_LABEL="coverage-failed,coverage-missing"
+          elif [ "$STATUS_COVERAGE" = "missing" ]; then
+            ADD_LABEL="coverage-missing"
+            DEL_LABEL="coverage-passed,coverage-failed"
+          fi
 
-          # Fetch PR URL after creation
-          PR_URL=$(gh pr view "$HEAD" --json url --jq '.url')
-          PR_ACTION="created"
-        else
-          echo "→ Existing PR #$PR_NUMBER found. Updating..."
-          gh pr edit "$PR_NUMBER" \
-            --title "$TITLE" \
-            --body-file pr_body.md \
-            --add-assignee "${{ github.actor }}" \
-            --remove-label "$DEL_LABEL" \
-            --add-label "$ADD_LABEL"
+          # Tenta encontrar um PR existente
+          PR_NUMBER=$(gh pr list --base "$BASE" --head "$HEAD" --json number --jq '.[0].number')
 
-          PR_URL="https://github.com/${{ github.repository }}/pull/$PR_NUMBER"
-          PR_ACTION="updated"
-        fi
+          echo "$TITLE"
+          if [ -z "$PR_NUMBER" ]; then
+            echo "→ No existing PR found. Creating new PR..."
+            gh pr create \
+              --base "$BASE" \
+              --head "$HEAD" \
+              --title "$TITLE" \
+              --body-file pr_body.md \
+              --label "auto-generated,$ADD_LABEL" \
+              --assignee "${{ github.actor }}"
 
-        echo "::notice title=Auto PR ${PR_ACTION}::${HEAD} → ${BASE}"
-        echo "::notice title=Pull Request::${PR_URL}"
+            PR_URL=$(gh pr view "$HEAD" --json url --jq '.url')
+            PR_ACTION="created"
+          else
+            echo "→ Existing PR #$PR_NUMBER found. Updating..."
+            gh pr edit "$PR_NUMBER" \
+              --title "$TITLE" \
+              --body-file pr_body.md \
+              --add-assignee "${{ github.actor }}" \
+              --remove-label "$DEL_LABEL" \
+              --add-label "$ADD_LABEL"
 
-        echo "pr_url=${PR_URL}" >> $GITHUB_OUTPUT
-        echo "pr_action=${PR_ACTION}" >> $GITHUB_OUTPUT
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+            PR_URL="https://github.com/${{ github.repository }}/pull/$PR_NUMBER"
+            PR_ACTION="updated"
+          fi
 
-    - name: 🧾 Job Summary
-      if: always()
-      run: |
-        cat <<EOF >> $GITHUB_STEP_SUMMARY
-        ## 🔀 Auto Pull Request
+          # Saida para Anotations do workflow
+          echo "::notice title=Auto PR ${PR_ACTION}::${HEAD} → ${BASE}"
+          echo "::notice title=Pull Request::${PR_URL}"
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "pr_action=$PR_ACTION" >> $GITHUB_OUTPUT
+  
+      - name: 🧾 Job Summary
+        if: always()
+        run: |
+          cat <<EOF >> $GITHUB_STEP_SUMMARY
+          ## 🔀 Auto Pull Request
 
-        **Status:** \`${{ steps.create-pr.outputs.pr_action || 'processed' }}\`
+          **Status:** \`${{ steps.create-pr.outputs.pr_action || 'processed' }}\`
 
-        **From:** \`${{ needs.resolve-branch.outputs.head }}\`  
-        **To:** \`${{ needs.resolve-branch.outputs.base }}\`
+          **From:** \`${{ needs.resolve-branch.outputs.head }}\`  
+          **To:** \`${{ needs.resolve-branch.outputs.base }}\`
 
-        **Coverage:** \`${{ needs.read-quality.outputs.status }}\`
-        **Reason:** ${{ needs.read-quality.outputs.reason }}
-        
-        | Metric      | Value                                       |
-        |------------ |-------------------------------------------- |
-        | Base Branch | ${{ needs.read-quality.outputs.base }}%     |
-        | Coverage    | **${{ needs.read-quality.outputs.line }}%** |
-        | Delta Δ     | ${{ needs.read-quality.outputs.delta }}     |
-        | Minimum     | ${{ needs.read-quality.outputs.min }}%      |
-        | Mode        | \`${{ needs.read-quality.outputs.mode }}\`  |
-        | Status      | \`${{ needs.read-quality.outputs.status }}\`|
-                
-        🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || '<failed>' }}
+          **Coverage:** \`${{ needs.read-quality.outputs.status }}\`
+          **Reason:** ${{ needs.read-quality.outputs.reason }}
+          
+          | Metric      | Value                                       |
+          |------------ |-------------------------------------------- |
+          | Base Branch | ${{ needs.read-quality.outputs.base }}%     |
+          | Coverage    | **${{ needs.read-quality.outputs.line }}%** |
+          | Delta Δ     | ${{ needs.read-quality.outputs.delta }}     |
+          | Minimum     | ${{ needs.read-quality.outputs.min }}%      |
+          | Mode        | \`${{ needs.read-quality.outputs.mode }}\`  |
+          | Status      | \`${{ needs.read-quality.outputs.status }}\`|
+                  
+          🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || '<failed>' }}
 
-        ---
-        _Gerado automaticamente pela action **auto-pr**_
-        EOF
+          ---
+          _Gerado automaticamente pela action **auto-pr**_
+          EOF

@@ -10,14 +10,14 @@ install_toolchain() {
 
   TOOLCHAIN=(
     semantic-release
+    @semantic-release/commit-analyzer
+    @semantic-release/release-notes-generator
+    @semantic-release/changelog
+    @semantic-release/npm
+    @semantic-release/github
     @semantic-release/git
     @semantic-release/exec
   )
-    # @semantic-release/commit-analyzer
-    # @semantic-release/release-notes-generator
-    # @semantic-release/changelog
-    # @semantic-release/npm
-    # @semantic-release/github
 
   log "Installing: ${TOOLCHAIN[*]}"
   npm install --no-save "${TOOLCHAIN[@]}"

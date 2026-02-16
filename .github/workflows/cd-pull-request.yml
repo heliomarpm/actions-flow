@@ -226,7 +226,7 @@ jobs:
           INTERPRETATION="Nenhum teste ou relatório de cobertura foi detectado nesta execução." 
           STATUS_DISPLAY="➖"
         fi
-        STATUS_DISPLAY+=" \`$$COV_STATUS\`"
+        STATUS_DISPLAY+=" \`$COV_STATUS\`"
 
         if [ -n "$COV_LINE" ]; then
           COVERAGE_BLOCK=$(cat <<EOF

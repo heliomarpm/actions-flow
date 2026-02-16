@@ -339,6 +339,13 @@ jobs:
           if [ -n "${{ steps.eval-coverage.outputs.reason }}" ]; then
             echo "**Reason:** ${{ steps.eval-coverage.outputs.reason }}"
           fi
+          
+          if [ "${{ steps.eval-coverage.outputs.status }}" = "failed" ]; then
+            STATUS_DISPLAY="❌"
+          else
+            STATUS_DISPLAY="✅"
+          fi
+          STATUS_DISPLAY+=" \`${{ steps.eval-coverage.outputs.status }}\`"
 
           echo ""
           echo "| Metric      | Value                                       |"
@@ -348,7 +355,7 @@ jobs:
           echo "| Delta Δ     | ${{ steps.eval-coverage.outputs.delta }}    |"
           echo "| Minimum     | ${{ steps.eval-coverage.outputs.min }}%     |"
           echo "| Mode        | \`${{ steps.eval-coverage.outputs.mode }}\` |"
-          echo "| Status      | \`${{ steps.eval-coverage.outputs.status }}\` |"
+          echo "| Status      | $STATUS_DISPLAY                             |"
           
           if [ -f "${{ env.NORMALIZED_COVERAGE }}" ]; then
             echo ""

@@ -215,14 +215,18 @@ jobs:
         echo "COV_REASON=$COV_REASON"
 
         TITLE="📊 Cobertura de Testes"
-
+        
         if [ "$COV_STATUS" = "passed" ]; then
           INTERPRETATION="A cobertura está **de acordo** com o limite exigido."
+          STATUS_DISPLAY="✅"
         elif [ "$COV_STATUS" = "failed" ]; then
           INTERPRETATION="A cobertura está **abaixo** do limite mínimo. Adicione testes antes de mesclar." 
+          STATUS_DISPLAY="❌"
         else
           INTERPRETATION="Nenhum teste ou relatório de cobertura foi detectado nesta execução." 
+          STATUS_DISPLAY="➖"
         fi
+        STATUS_DISPLAY+=" \`${{ steps.eval-coverage.outputs.status }}\`"
 
         if [ -n "$COV_LINE" ]; then
           COVERAGE_BLOCK=$(cat <<EOF
@@ -234,7 +238,7 @@ jobs:
         | Delta  | $COV_DELTA |
         | Mínimo requerido | $COV_MIN% |
         | Modo | \`$COV_MODE\` |
-        | Status | **$COV_STATUS** |
+        | Status | $STATUS_DISPLAY |
 
         EOF
         )
@@ -328,6 +332,13 @@ jobs:
     - name: 🧾 Job Summary
       if: always()
       run: |
+        if [ "${{ needs.read-quality.outputs.status }}" = "failed" ]; then
+          STATUS_DISPLAY="❌"
+        else
+          STATUS_DISPLAY="✅"
+        fi
+        STATUS_DISPLAY+=" \`${{ needs.read-quality.outputs.status }}\`"
+
         cat <<EOF >> $GITHUB_STEP_SUMMARY
         ## 🔀 Auto Pull Request
 
@@ -346,7 +357,7 @@ jobs:
         | Delta Δ     | ${{ needs.read-quality.outputs.delta }}     |
         | Minimum     | ${{ needs.read-quality.outputs.min }}%      |
         | Mode        | \`${{ needs.read-quality.outputs.mode }}\`  |
-        | Status      | \`${{ needs.read-quality.outputs.status }}\`|
+        | Status      | $STATUS_DISPLAY                             |
                 
         🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || '<failed>' }}
 

@@ -145,18 +145,18 @@ jobs:
       # -------------------------------------------------
       # Garantir que o remote do repo consumidor está correto
       # -------------------------------------------------
-      - name: 🔐 Fix git remote
-        run: |
-          git remote set-url origin https://github.com/${GITHUB_REPOSITORY}.git
-          git fetch origin --prune
-          git remote -v
-
-      # - name: 🔐 Auth GitHub CLI
+      # - name: 🔐 Fix git remote
       #   run: |
-      #     # echo "${GITHUB_TOKEN}" | gh auth login --with-token
-      #     gh auth setup-git
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      #     git remote set-url origin https://github.com/${GITHUB_REPOSITORY}.git
+      #     git fetch origin --prune
+      #     git remote -v
+
+      - name: 🔐 Auth GitHub CLI
+        run: |
+          # echo "${GITHUB_TOKEN}" | gh auth login --with-token
+          gh auth setup-git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       # -------------------------------------------------
       # Validar branch destino de forma determinística

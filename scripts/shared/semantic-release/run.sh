@@ -35,7 +35,7 @@ build_cmd() {
   local CMD="npx semantic-release"
   
   [[ -n "$DEFAULT_CONFIG" ]] && CMD+=" --extends $DEFAULT_CONFIG"
-  [[ "$IS_DEBUG_MODE" == "true" ]]; && CMD+=" --debug"
+  [[ "$IS_DEBUG_MODE" == "true" ]] && CMD+=" --debug"
  
   echo "$CMD" 
 }

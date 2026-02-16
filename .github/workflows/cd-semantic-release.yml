@@ -110,7 +110,8 @@ jobs:
 
       - name: 🚀 Run Semantic Release
         if: steps.stack.outputs.value != ''
-        working-directory: ${{ github.workspace }}
+        # working-directory: ${{ github.workspace }}
+        working-directory: ${{ steps.path.outputs.value }}
         run: |
           SCRIPT="$REUSABLE_PATH/scripts/shared/semantic-release/run.sh"
           chmod +x "$SCRIPT"

@@ -34,16 +34,8 @@ STRICT_TEMPLATE="$REUSABLE_PATH/templates/strict-mode-error.md"
 build_cmd() {
   local CMD="npx semantic-release"
   
-  # [[ -n "$DEFAULT_CONFIG" ]] && CMD+=" --extends $DEFAULT_CONFIG"
-  if [[ -n "$DEFAULT_CONFIG" ]]; then
-    log "Running semantic-release with default config"
-    CMD+=" --extends $DEFAULT_CONFIG"
-  fi
-
-  if [[ "$IS_DEBUG_MODE" == "true" ]]; then
-    log "Debug mode enabled"
-    CMD+=" --debug"
-  fi
+  [[ -n "$DEFAULT_CONFIG" ]] && CMD+=" --extends $DEFAULT_CONFIG"
+  [[ "$IS_DEBUG_MODE" == "true" ]]; && CMD+=" --debug"
  
   echo "$CMD" 
 }
@@ -54,6 +46,7 @@ build_cmd() {
 strict_mode() {
   local STRICT_CMD="${1:-npx semantic-release} --dry-run"
   
+  echo "===================================================="
   log "Strict mode enabled — validating conventional commits"
 
   OUTPUT=$(eval "$STRICT_CMD" 2>&1 || true)
@@ -96,7 +89,7 @@ run() {
   bash "$(dirname "$0")/install.sh"
 
 
-  CMD=$(build_cmd)
+  local CMD=$(build_cmd)
 
   if [[ "$STRICT_MODE" == "true" ]]; then
     strict_mode "$CMD"
@@ -108,7 +101,7 @@ run() {
   fi
 
   echo "===================================================="
-  log "🚀 Running: $CMD"
+  log "running: $CMD"
   eval "$CMD"  
 }
 

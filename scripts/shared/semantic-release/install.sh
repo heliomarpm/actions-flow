@@ -6,7 +6,7 @@ has_file() { [[ -f "$1" ]]; }
 
 
 install_toolchain() {  
-  log "Installing semantic-release toolchain"
+  # log "Installing semantic-release toolchain"
 
   TOOLCHAIN=(
     semantic-release
@@ -25,7 +25,8 @@ install_toolchain() {
   echo "✅ Toolchain installation completed"
 }
 
-run() {  
+run() {
+  echo "===================================================="
   echo "📦 Installing dependencies..."  
 
   # if has_file "pnpm-lock.yaml"; then

@@ -10,13 +10,16 @@
       {
         "releaseRules": [
           { "breaking": true, "release": "major" },
+          { "type": "refactor!", "release": "major" },
+          { "type": "feat!", "release": "major" },
           { "type": "feat", "release": "minor" },
           { "type": "fix", "release": "patch" },
           { "type": "revert", "release": "patch" },
+          { "type": "perf", "release": "patch" },
           { "scope": "no-release", "release": false }
         ],
         "parserOpts": {
-          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES"]
+          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING-CHANGE", "BREAKING-CHANGES"]
         }
       }
     ],

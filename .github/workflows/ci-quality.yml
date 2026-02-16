@@ -18,12 +18,12 @@ on:
         required: false
         type: boolean
         default: false
-      base_branch:
-        description: 'Base branch for coverage (default: main)'
+
+      coverage_base_branch:
+        description: 'Base branch for comparative coverage (decrease mode) (default: main)'
         required: false
         type: string
         default: "main"
-
       coverage_strategy:
         description: 'Coverage strategy (custom | empty for auto-detect)'
         required: false
@@ -162,7 +162,7 @@ jobs:
       id: base-coverage
       # if: inputs.coverage_mode == 'decrease'
       run: |
-        BASE_REF="${{ github.base_ref || inputs.base_branch }}"
+        BASE_REF="${{ github.base_ref || inputs.coverage_base_branch }}"
 
         log "Base branch: $BASE_REF"
 

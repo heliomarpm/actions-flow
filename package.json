@@ -1,0 +1,28 @@
+{
+  "name": "actions-flow",
+  "version": "1.0.0",
+  "description": "Conjunto de GitHub Reusable Workflows para padronizar CI, cobertura, promoção de código e releases automatizados, com suporte a múltiplas stacks.",
+  "homepage": "https://github.com/heliomarpm/actions-flow#readme",
+  "bugs": {
+    "url": "https://github.com/heliomarpm/actions-flow/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heliomarpm/actions-flow.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "release:test": "semantic-release --dry-run --no-ci"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "semantic-release": "^24.2.9"
+  }
+}

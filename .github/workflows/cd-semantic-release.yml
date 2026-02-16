@@ -7,12 +7,12 @@ on:
         description: 'Stack the project. (node | php | dotnet | python | go | empty for auto-detect)'
         required: false
         type: string
-        default: null
+        default: "auto"
       project_path:
         description: 'Project path source code'
         required: false
         type: string
-        default: null
+        default: "."
 
       dry_run:
         description: 'Dry run mode for semantic-release. (default: false -> true for PRs)'

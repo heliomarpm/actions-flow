@@ -27,12 +27,14 @@ STRICT_MODE="${STRICT_CONVENTIONAL_COMMITS:-false}"
 DEFAULT_CONFIG="./$REUSABLE_PATH/scripts/plugins/$STACK/releaserc.json"
 STRICT_TEMPLATE="$REUSABLE_PATH/templates/strict-mode-error.md"
 
+
 # ------------------------------------------------------------
 # Build semantic-release command
 # ------------------------------------------------------------
 build_cmd() {
   local CMD="npx semantic-release"
   
+  # [[ -n "$DEFAULT_CONFIG" ]] && CMD+=" --extends $DEFAULT_CONFIG"
   if [[ -n "$DEFAULT_CONFIG" ]]; then
     log "Running semantic-release with default config"
     CMD+=" --extends $DEFAULT_CONFIG"
@@ -89,6 +91,11 @@ strict_mode() {
 # Run release
 # ------------------------------------------------------------
 run() {
+  # install dependencies  
+  # bash "$REUSABLE_PATH/scripts/shared/semantic-release/install.sh"
+  bash "$(dirname "$0")/install.sh"
+
+
   CMD=$(build_cmd)
 
   if [[ "$STRICT_MODE" == "true" ]]; then

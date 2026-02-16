@@ -14,28 +14,6 @@ on:
         type: string
         default: null
 
-      custom_config:
-        description: 'Path to semantic-release config file.'
-        required: false
-        type: string
-      branches:
-        description: |
-          'The branches on which releases should happen. It will override the branches attribute in your configuration file.'
-          'Support for semantic-release above v16.'
-          'See https://semantic-release.gitbook.io/semantic-release/usage/configuration#branches for more information.' 
-        required: false
-        default: [ "main", { "name": "release", "prerelease": true }, { "name": "develop", "prerelease": true } ]
-      extra_plugins:
-        description: 'Extra plugins for pre-install. You can also specify specifying version range for the extra plugins if you prefer.'
-        required: false
-        default: |
-          ["@semantic-release/changelog", { "changelogFile": "CHANGELOG.md" }], 
-          ["@semantic-release/npm", { "npmPublish": false, "failComment": true }], 
-          ["@semantic-release/github", { "successComment": false }], 
-          [ "@semantic-release/git", { 
-            "assets": ["CHANGELOG.md", "package.json"], 
-            "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}" 
-          } ]
       dry_run:
         description: 'Dry run mode for semantic-release. (default: false -> true for PRs)'
         required: false
@@ -141,7 +119,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           STACK: ${{ steps.stack.outputs.value }}
           REUSABLE_PATH: ${{ env.REUSABLE_PATH }}
-          CUSTOM_CONFIG: ${{ inputs.custom_config }}
           DRY_RUN: ${{ inputs.dry_run }}
           DEBUG_MODE: ${{ inputs.debug_mode }}
           STRICT_CONVENTIONAL_COMMITS: ${{ inputs.strict_conventional_commits }}

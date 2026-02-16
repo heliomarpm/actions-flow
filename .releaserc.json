@@ -40,8 +40,8 @@
       }
     ],
      ["@semantic-release/github", {
-      "successComment": true,
-      "failComment": true,
+      "successComment": "true",
+      "failComment": "true",
       "assets": [
         { "path": "dist/**", "label": "Build" },
         { "path": "coverage/**", "label": "Coverage Report" }

@@ -335,9 +335,9 @@ jobs:
 
         ---
 
-        ${COVERAGE_BLOCK}          
+        ${COVERAGE_BLOCK}
 
-        #### _$INTERPRETATION_
+        #### $INTERPRETATION
         ---
         _Gerado automaticamente pela action **auto-pr**_
         EOF

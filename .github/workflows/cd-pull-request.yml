@@ -227,7 +227,6 @@ jobs:
 
           if [ -n "$COV_LINE" ]; then
             COVERAGE_BLOCK=$(cat <<EOF
-          ### $TITLE
 
           | Métrica | Valor  |
           |-------- |------- |
@@ -242,9 +241,7 @@ jobs:
           )
 
           else
-            COVERAGE_BLOCK=$(cat <<EOF
-          ### $TITLE
-
+            COVERAGE_BLOCK=$(cat <<EOF        
           ⚠️ Cobertura não gerada para este projeto.
           EOF
           )
@@ -261,9 +258,12 @@ jobs:
 
           ---
 
+          ### $TITLE
+
+          > $INTERPRETATION
+
           ${COVERAGE_BLOCK}
 
-          #### $INTERPRETATION
           ---
           _Gerado automaticamente pela action **auto-pr**_
           EOF

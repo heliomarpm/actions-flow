@@ -306,7 +306,7 @@ jobs:
 
         HEAD="${{ needs.resolve-branch.outputs.head }}"
         BASE="${{ needs.resolve-branch.outputs.base }}"
-        TITLE="${{ inputs.pr_title || "PR $HEAD → $BASE" }}"
+        TITLE="${{ inputs.pr_title || 'PR $HEAD → $BASE' }}"
 
         TITLE=${TITLE//\{\{yyyy-MM-dd\}\}/$(date +'%Y-%m-%d')}
         TITLE=${TITLE//\{\{HEAD_BRANCH\}\}/$HEAD}

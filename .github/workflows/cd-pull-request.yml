@@ -234,7 +234,7 @@ jobs:
 
         if ! [ -v PR_TEMPLATE ]; then
           log "Usando template padrão"
-          PR_TEMPLATE=$(cat "${{ env.REUSABLE_PATH }}/.github/templates/pr_template.md")
+          PR_TEMPLATE=$(cat "${{ env.REUSABLE_PATH }}/.github/templates/pr-template.md")
         fi
 
         # Verifica se o template contém a chave para bloco de qualidade

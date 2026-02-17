@@ -244,7 +244,7 @@ jobs:
           "min": $MIN,
           "status": "$STATUS",
           "mode": "$MODE",
-          "reason": "$REASON"
+          "reason": "$REASON",
           "interpretation": "$INTERPRETATION"
         }
         EOF
@@ -300,7 +300,7 @@ jobs:
               minimum: Number("${{ inputs.coverage_min || 0 }}"),
               mode: "${{ inputs.coverage_mode }}",
               status: "${{ steps.eval-coverage.outputs.status || 'unknown' }}",
-              reason: "${{ steps.eval-coverage.outputs.reason || 'not evaluated' }}"
+              reason: "${{ steps.eval-coverage.outputs.reason || 'not evaluated' }}",
               Interpretation: "${{ steps.eval-coverage.outputs.interpretation || 'not evaluated' }}"
             }
           };

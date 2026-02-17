@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1](https://github.com/heliomarpm/actions-flow/compare/v1.1.0...v1.1.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* **workflows:** 🐛 ajustar aspas em título de PR do workflow CD ([f1ff93b](https://github.com/heliomarpm/actions-flow/commit/f1ff93b82d667d36ba96f9334b76f7c9ae420db8))
+
 # [1.1.0](https://github.com/heliomarpm/actions-flow/compare/v1.0.0...v1.1.0) (2026-02-17)
 
 

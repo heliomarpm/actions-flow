@@ -1,6 +1,6 @@
 ## 🤖 Pull Request Automática
 
-Esta PR promove as mudanças da _branch_ \`{{HEAD_BRANCH}}\` para a _branch_ \`{{BASE_BRANCH}}\`
+Esta PR promove as mudanças da ***origem:*** `{{HEAD_BRANCH}}` para ***destino:*** `{{BASE_BRANCH}}`
 
 {{QUALITY_GATE_RESULT}}
 

@@ -221,18 +221,18 @@ jobs:
 
         if [ -n "${{ inputs.pr_body_path }}" ]; then
           PR_BODY_PATH="${{ steps.path.outputs.value }}/${{ inputs.pr_body_path }}"
-          log "Usando atributo `pr_body_path`: $PR_BODY_PATH"
+          log "Usando atributo \`pr_body_path\`: $PR_BODY_PATH"
 
           if [ ! -f "$PR_BODY_PATH" ]; then
-            fail "PR body file not found: $PR_BODY_PATH"
+            fail "PR body file \`not found\`: $PR_BODY_PATH"
           fi          
           PR_TEMPLATE="$(cat $PR_BODY_PATH)"
         elif [ -n "${{ inputs.pr_body }}" ]; then 
-          log "Usando atributo `pr_body`"
+          log "Usando atributo \`pr_body\`"
           PR_TEMPLATE="${{ inputs.pr_body  }}"
         fi
 
-        if [ -z "$PR_TEMPLATE" ]; then
+        if ! [ -v PR_TEMPLATE ]; then
           log "Usando template padrão"
           PR_TEMPLATE=$(cat "${{ env.REUSABLE_PATH }}/.github/templates/pr_template.md")
         fi

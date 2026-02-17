@@ -2,7 +2,7 @@
 
 Esta PR promove as mudanças da _branch_ \`{{HEAD_BRANCH}}\` para a _branch_ \`{{BASE_BRANCH}}\`
 
-{{QUALITY_BLOCK}}
+{{QUALITY_GATE_RESULT}}
 
 ---
 ### 📋 Checklist da Entrega

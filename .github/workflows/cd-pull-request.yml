@@ -237,8 +237,8 @@ jobs:
           PR_TEMPLATE=$(cat "${{ env.REUSABLE_PATH }}/.github/templates/pr_template.md")
         fi
 
-        # Verifica se o template contém a chave {{QUALITY_BLOCK}} 
-        if [[ "$PR_TEMPLATE" == *"{{QUALITY_BLOCK}}"* ]]; then
+        # Verifica se o template contém a chave para bloco de qualidade
+        if [[ "$PR_TEMPLATE" == *"{{QUALITY_GATE_RESULT}}"* ]]; then
           COV_BASE="${{ needs.read-quality.outputs.base }}"
           COV_LINE="${{ needs.read-quality.outputs.line }}"
           COV_DELTA="${{ needs.read-quality.outputs.delta }}"
@@ -293,8 +293,7 @@ jobs:
         # Substitui os placeholders 
         PR_TEMPLATE=${PR_TEMPLATE//\{\{HEAD_BRANCH\}\}/"${{ needs.resolve-branch.outputs.head }}"} 
         PR_TEMPLATE=${PR_TEMPLATE//\{\{BASE_BRANCH\}\}/"${{ needs.resolve-branch.outputs.base }}"} 
-        PR_TEMPLATE=${PR_TEMPLATE//\{\{INTERPRETATION\}\}/"$INTERPRETATION"} 
-        PR_TEMPLATE=${PR_TEMPLATE//\{\{QUALITY_BLOCK\}\}/"$QUALITY_BLOCK"} 
+        PR_TEMPLATE=${PR_TEMPLATE//\{\{QUALITY_GATE_RESULT\}\}/"$QUALITY_BLOCK"} 
 
         echo "$PR_TEMPLATE" > pr_body.md
 

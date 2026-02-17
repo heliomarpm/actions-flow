@@ -258,33 +258,33 @@ jobs:
 
           if [ -n "$COV_LINE" ]; then
             QUALITY_BLOCK=$(cat <<EOF
-            ---
-            ### $TITLE_BLOCK
+          ---
+          ### $TITLE_BLOCK
 
-            > ${{ needs.read-quality.outputs.interpretation }}
+          > ${{ needs.read-quality.outputs.interpretation }}
 
-            | Métrica | Valor  |
-            |-------- |------- |
-            | Branch Base  | **$COV_BASE%** |
-            | Linhas  | **$COV_LINE%** |
-            | Delta  | $COV_DELTA |
-            | Mínimo requerido | $COV_MIN% |
-            | Modo | \`$COV_MODE\` |
-            | Status | $STATUS_DISPLAY |
+          | Métrica | Valor  |
+          |-------- |------- |
+          | Branch Base  | **$COV_BASE%** |
+          | Linhas  | **$COV_LINE%** |
+          | Delta  | $COV_DELTA |
+          | Mínimo requerido | $COV_MIN% |
+          | Modo | \`$COV_MODE\` |
+          | Status | $STATUS_DISPLAY |
 
-            EOF
-            )
+          EOF
+          )
           else
             QUALITY_BLOCK=$(cat <<EOF
-            ---
-            ### $TITLE
-            
-            > ⚠️ Cobertura não gerada para este projeto.
-            
-            Status: $STATUS_DISPLAY
+          ---
+          ### $TITLE
+          
+          > ⚠️ Cobertura não gerada para este projeto.
+          
+          Status: $STATUS_DISPLAY
 
-            EOF
-            )
+          EOF
+          )
           fi
         else
           QUALITY_BLOCK=""

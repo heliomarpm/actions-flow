@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.1.0](https://github.com/heliomarpm/actions-flow/compare/v1.0.0...v1.1.0) (2026-02-17)
+
+
+### Features
+
+* **ci:** ✨ adicionar personalização e melhorias aos workflows ([7580513](https://github.com/heliomarpm/actions-flow/commit/7580513d5d3bad2050e734a461b5ff868bb0a3a5))
+
 # 1.0.0 (2026-02-16)
 
 

@@ -130,9 +130,9 @@ jobs:
           core.setOutput("mode", data.coverage.mode);
           core.setOutput("status", data.coverage.status);
           core.setOutput("reason", data.coverage.reason);
-          core.setOutput("interpretation", data.coverage.interpretation);
+          core.setOutput("interpretation", data.coverage.interpretation || data.coverage.reason);
 
-          core.debug("📊 Coverage: ", data.coverage);
+          console.log("📊 Quality Result: ", data.coverage);
 
   auto-pr:
     needs:
@@ -219,7 +219,7 @@ jobs:
       run: |
         log "Cobertura: ${{ needs.read-quality.outputs.interpretation }}"
 
-        if [ -n ${{ inputs.pr_body_path }} ]; then
+        if [ -n "${{ inputs.pr_body_path }}" ]; then
           PR_BODY_PATH="${{ steps.path.outputs.value }}/${{ inputs.pr_body_path }}"
           log "Usando atributo `pr_body_path`: $PR_BODY_PATH"
 
@@ -227,7 +227,7 @@ jobs:
             fail "PR body file not found: $PR_BODY_PATH"
           fi          
           PR_TEMPLATE="$(cat $PR_BODY_PATH)"
-        elif [ -n ${{ inputs.pr_body }} ]; then 
+        elif [ -n "${{ inputs.pr_body }}" ]; then 
           log "Usando atributo `pr_body`"
           PR_TEMPLATE="${{ inputs.pr_body  }}"
         fi

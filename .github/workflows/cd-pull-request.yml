@@ -14,6 +14,22 @@ on:
         type: string
         default: "develop"
 
+      pr_title: 
+        description: 'Title for the Pull Request'
+        required: false
+        type: string
+        default: "🔀 PR ({{yyyy-MM-dd}}): {{HEAD_BRANCH}} → {{BASE_BRANCH}}"
+
+      pr_body:
+        description: 'Body for the Pull Request (default changes made by this workflow)'
+        required: false
+        type: string
+
+      pr_body_path:
+        description: 'Path for the Pull Request body. Takes priority over `pr_body`'
+        required: false
+        type: string
+
     secrets:
       GH_TOKEN:
         required: true
@@ -73,6 +89,7 @@ jobs:
       delta: ${{ steps.quality.outputs.delta }}
       mode: ${{ steps.quality.outputs.mode }}
       reason: ${{ steps.quality.outputs.reason }}
+      interpretation: ${{ steps.quality.outputs.interpretation }}
 
     steps:
     - name: 🔎 Read quality check
@@ -113,6 +130,7 @@ jobs:
           core.setOutput("mode", data.coverage.mode);
           core.setOutput("status", data.coverage.status);
           core.setOutput("reason", data.coverage.reason);
+          core.setOutput("interpretation", data.coverage.interpretation);
 
           core.debug("📊 Coverage: ", data.coverage);
 
@@ -197,79 +215,88 @@ jobs:
 
     - name: 📝 Generate PR body
       if: needs.resolve-branch.outputs.skip != 'true'
+      working-directory: ${{ steps.path.outputs.value }}
       run: |
-        COV_BASE="${{ needs.read-quality.outputs.base }}"
-        COV_LINE="${{ needs.read-quality.outputs.line }}"
-        COV_DELTA="${{ needs.read-quality.outputs.delta }}"
-        COV_MIN="${{ needs.read-quality.outputs.min }}"
-        COV_STATUS="${{ needs.read-quality.outputs.status }}"
-        COV_MODE="${{ needs.read-quality.outputs.mode }}"
-        COV_REASON="${{ needs.read-quality.outputs.reason }}"
+        log "Cobertura: ${{ needs.read-quality.outputs.interpretation }}"
 
-        echo "COV_BASE=$COV_BASE"
-        echo "COV_LINE=$COV_LINE"
-        echo "COV_DELTA=$COV_DELTA"
-        echo "COV_MIN=$COV_MIN"
-        echo "COV_STATUS=$COV_STATUS"
-        echo "COV_MODE=$COV_MODE"
-        echo "COV_REASON=$COV_REASON"
+        if [ -n ${{ inputs.pr_body_path }} ]; then
+          PR_BODY_PATH="${{ steps.path.outputs.value }}/${{ inputs.pr_body_path }}"
+          log "Usando atributo `pr_body_path`: $PR_BODY_PATH"
 
-        TITLE="📊 Cobertura de Testes"
+          if [ ! -f "$PR_BODY_PATH" ]; then
+            fail "PR body file not found: $PR_BODY_PATH"
+          fi          
+          PR_TEMPLATE="$(cat $PR_BODY_PATH)"
+        elif [ -n ${{ inputs.pr_body }} ]; then 
+          log "Usando atributo `pr_body`"
+          PR_TEMPLATE="${{ inputs.pr_body  }}"
+        fi
+
+        if [ -z "$PR_TEMPLATE" ]; then
+          log "Usando template padrão"
+          PR_TEMPLATE=$(cat "${{ env.REUSABLE_PATH }}/.github/templates/pr_template.md")
+        fi
+
+        # Verifica se o template contém a chave {{QUALITY_BLOCK}} 
+        if [[ "$PR_TEMPLATE" == *"{{QUALITY_BLOCK}}"* ]]; then
+          COV_BASE="${{ needs.read-quality.outputs.base }}"
+          COV_LINE="${{ needs.read-quality.outputs.line }}"
+          COV_DELTA="${{ needs.read-quality.outputs.delta }}"
+          COV_MIN="${{ needs.read-quality.outputs.min }}"
+          COV_STATUS="${{ needs.read-quality.outputs.status }}"
+          COV_MODE="${{ needs.read-quality.outputs.mode }}"
+          COV_REASON="${{ needs.read-quality.outputs.reason }}"
+
+          TITLE_BLOCK="📊 Cobertura de Testes"
         
-        if [ "$COV_STATUS" = "passed" ]; then
-          INTERPRETATION="A cobertura está **de acordo** com o limite exigido."
-          STATUS_DISPLAY="✅"
-        elif [ "$COV_STATUS" = "failed" ]; then
-          INTERPRETATION="A cobertura está **abaixo** do limite mínimo. Adicione testes antes de mesclar." 
-          STATUS_DISPLAY="❌"
+          if [ "$COV_STATUS" = "passed" ]; then
+            STATUS_DISPLAY="✅"
+          else
+            STATUS_DISPLAY="❌"
+          fi
+          STATUS_DISPLAY+=" \`$COV_STATUS\`"
+
+          if [ -n "$COV_LINE" ]; then
+            QUALITY_BLOCK=$(cat <<EOF
+            ---
+            ### $TITLE_BLOCK
+
+            > ${{ needs.read-quality.outputs.interpretation }}
+
+            | Métrica | Valor  |
+            |-------- |------- |
+            | Branch Base  | **$COV_BASE%** |
+            | Linhas  | **$COV_LINE%** |
+            | Delta  | $COV_DELTA |
+            | Mínimo requerido | $COV_MIN% |
+            | Modo | \`$COV_MODE\` |
+            | Status | $STATUS_DISPLAY |
+
+            EOF
+            )
+          else
+            QUALITY_BLOCK=$(cat <<EOF
+            ---
+            ### $TITLE
+            
+            > ⚠️ Cobertura não gerada para este projeto.
+            
+            Status: $STATUS_DISPLAY
+
+            EOF
+            )
+          fi
         else
-          INTERPRETATION="Nenhum teste ou relatório de cobertura foi detectado nesta execução." 
-          STATUS_DISPLAY="➖"
-        fi
-        STATUS_DISPLAY+=" \`$COV_STATUS\`"
-
-        if [ -n "$COV_LINE" ]; then
-          COVERAGE_BLOCK=$(cat <<EOF
-
-        | Métrica | Valor  |
-        |-------- |------- |
-        | Branch Base  | **$COV_BASE%** |
-        | Linhas  | **$COV_LINE%** |
-        | Delta  | $COV_DELTA |
-        | Mínimo requerido | $COV_MIN% |
-        | Modo | \`$COV_MODE\` |
-        | Status | $STATUS_DISPLAY |
-
-        EOF
-        )
-
-        else
-          COVERAGE_BLOCK=$(cat <<EOF        
-        ⚠️ Cobertura não gerada para este projeto.
-        EOF
-        )
+          QUALITY_BLOCK=""
         fi
 
-        cat <<EOF > pr_body.md
+        # Substitui os placeholders 
+        PR_TEMPLATE=${PR_TEMPLATE//\{\{HEAD_BRANCH\}\}/"${{ needs.resolve-branch.outputs.head }}"} 
+        PR_TEMPLATE=${PR_TEMPLATE//\{\{BASE_BRANCH\}\}/"${{ needs.resolve-branch.outputs.base }}"} 
+        PR_TEMPLATE=${PR_TEMPLATE//\{\{INTERPRETATION\}\}/"$INTERPRETATION"} 
+        PR_TEMPLATE=${PR_TEMPLATE//\{\{QUALITY_BLOCK\}\}/"$QUALITY_BLOCK"} 
 
-        ## 🤖 Pull Request Automática
-
-        Esta PR foi criada ou atualizada automaticamente.
-
-        **Origem:** \`${{ needs.resolve-branch.outputs.head }}\`  
-        **Destino:** \`${{ needs.resolve-branch.outputs.base }}\`
-
-        ---
-
-        ### $TITLE
-
-        > $INTERPRETATION
-
-        ${COVERAGE_BLOCK}
-
-        ---
-        _Gerado automaticamente pela action **auto-pr**_
-        EOF
+        echo "$PR_TEMPLATE" > pr_body.md
 
     - name: 📜 Create or Update Pull Request
       id: create-pr
@@ -280,7 +307,11 @@ jobs:
 
         HEAD="${{ needs.resolve-branch.outputs.head }}"
         BASE="${{ needs.resolve-branch.outputs.base }}"
-        TITLE="🔀 PR ($(date +'%Y-%m-%d')): ${HEAD} → ${BASE}"
+        TITLE="${{ inputs.pr_title || "PR $HEAD → $BASE" }}"
+
+        TITLE=${TITLE//\{\{yyyy-MM-dd\}\}/$(date +'%Y-%m-%d')}
+        TITLE=${TITLE//\{\{HEAD_BRANCH\}\}/$HEAD}
+        TITLE=${TITLE//\{\{BASE_BRANCH\}\}/$BASE}
 
         STATUS_COVERAGE="${{ needs.read-quality.outputs.status }}"
         if [ "$STATUS_COVERAGE" = "failed" ]; then
@@ -326,6 +357,7 @@ jobs:
         # Saida para Anotations do workflow
         echo "::notice title=Auto PR ${PR_ACTION}::${HEAD} → ${BASE}"
         echo "::notice title=Pull Request::${PR_URL}"
+
         echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
         echo "pr_action=$PR_ACTION" >> $GITHUB_OUTPUT
 
@@ -347,8 +379,10 @@ jobs:
         **From:** \`${{ needs.resolve-branch.outputs.head }}\`  
         **To:** \`${{ needs.resolve-branch.outputs.base }}\`
 
-        **Coverage:** \`${{ needs.read-quality.outputs.status }}\`
-        **Reason:** ${{ needs.read-quality.outputs.reason }}
+        ---
+        ### 📊 Coverage
+
+        > ${{ needs.read-quality.outputs.interpretation }}
 
         | Metric      | Value                                       |
         |------------ |-------------------------------------------- |
@@ -358,7 +392,9 @@ jobs:
         | Minimum     | ${{ needs.read-quality.outputs.min }}%      |
         | Mode        | \`${{ needs.read-quality.outputs.mode }}\`  |
         | Status      | $STATUS_DISPLAY                             |
+        | Reason      | \`${{ needs.read-quality.outputs.reason }}\`|
                 
+        ---
         🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || '<failed>' }}
 
         ---

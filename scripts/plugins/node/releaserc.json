@@ -19,6 +19,8 @@
           { "scope": "no-release", "release": false }
         ],
         "parserOpts": {
+          "mergePattern": "^Merge pull request #(\\d+) from .+\\n(.+)",
+          "mergeCorrespondence": ["id", "message"],
           "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES", "BREAKING-CHANGE", "BREAKING-CHANGES"]
         }
       }

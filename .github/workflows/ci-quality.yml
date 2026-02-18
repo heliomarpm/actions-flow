@@ -301,7 +301,7 @@ jobs:
               mode: "${{ inputs.coverage_mode }}",
               status: "${{ steps.eval-coverage.outputs.status || 'unknown' }}",
               reason: "${{ steps.eval-coverage.outputs.reason || 'not evaluated' }}",
-              Interpretation: "${{ steps.eval-coverage.outputs.interpretation || 'not evaluated' }}"
+              interpretation: "${{ steps.eval-coverage.outputs.interpretation || 'not evaluated' }}"
             }
           };
 

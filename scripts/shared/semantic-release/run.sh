@@ -25,7 +25,7 @@ IS_DEBUG="${IS_DEBUG:-false}"
 IS_STRICT_MODE="${IS_STRICT_MODE:-false}"
 
 DEFAULT_CONFIG="$REUSABLE_PATH/scripts/plugins/$STACK/releaserc.json"
-STRICT_TEMPLATE="$REUSABLE_PATH/.github/templates/strict-conventional-error.md"
+STRICT_TEMPLATE="$REUSABLE_PATH/.github/templates/commit_strict_error.md"
 
 
 # ------------------------------------------------------------

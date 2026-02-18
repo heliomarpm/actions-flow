@@ -14,7 +14,7 @@ on:
         type: string
         default: "develop"
 
-      pr_title: 
+      pr_title:
         description: 'Title for the Pull Request'
         required: false
         type: string
@@ -234,7 +234,7 @@ jobs:
 
         if ! [ -v PR_TEMPLATE ]; then
           log "Usando template padrão"
-          PR_TEMPLATE=$(cat "${{ env.REUSABLE_PATH }}/.github/templates/pr-template.md")
+          PR_TEMPLATE=$(cat "${{ env.REUSABLE_PATH }}/.github/templates/pr_template.md")
         fi
 
         COVERAGE_BLOCK="missing"
@@ -252,6 +252,8 @@ jobs:
           fi        
         fi
 
+        log "COVERAGE_BLOCK: $COVERAGE_BLOCK"
+
         if [ "$COVERAGE_BLOCK" = "found" ]; then
           COV_BASE="${{ needs.read-quality.outputs.base }}"
           COV_LINE="${{ needs.read-quality.outputs.line }}"
@@ -261,7 +263,7 @@ jobs:
           COV_MODE="${{ needs.read-quality.outputs.mode }}"
           COV_REASON="${{ needs.read-quality.outputs.reason }}"
           COV_INTERPRETATION="${{ needs.read-quality.outputs.interpretation }}"
-        
+
           if [ "$COV_STATUS" = "passed" ]; then
             STATUS_DISPLAY="✅"
           else
@@ -272,9 +274,9 @@ jobs:
           QUALITY_BLOCK=$(cat <<EOF
         ---
         ### $TITLE_BLOCK
-      
+
         > $COV_INTERPRETATION
-      
+
         | Métrica | Valor  |
         |-------- |------- |
         | Branch Base  | **$COV_BASE%** |
@@ -283,16 +285,16 @@ jobs:
         | Mínimo requerido | $COV_MIN% |
         | Modo | \`$COV_MODE\` |
         | Status | $STATUS_DISPLAY |
-      
+
         EOF
         )
         elif [ "$COVERAGE_BLOCK" = "not-found" ]; then
           QUALITY_BLOCK=$(cat <<EOF
         ---
         ### $TITLE_BLOCK  
-        
+
         > ⚠️ Cobertura não gerada para este projeto.
-        
+
         Status: $STATUS_DISPLAY
 
         EOF
@@ -300,6 +302,8 @@ jobs:
         else
           QUALITY_BLOCK=""
         fi
+
+        log "QUALITY_BLOCK: $QUALITY_BLOCK"
 
         # Substitui os placeholders 
         PR_TEMPLATE=${PR_TEMPLATE//\{\{HEAD_BRANCH\}\}/"${{ needs.resolve-branch.outputs.head }}"} 

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.3.0](https://github.com/heliomarpm/actions-flow/compare/v1.2.0...v1.3.0) (2026-02-22)
+
+
+### Features
+
+* **ci:** ✨ adicionar validação de commits e análise de versão ([0802b34](https://github.com/heliomarpm/actions-flow/commit/0802b348a909ab560644d4b3bfd51e72491424a8))
+
 # [1.2.0](https://github.com/heliomarpm/actions-flow/compare/v1.1.8...v1.2.0) (2026-02-22)
 
 

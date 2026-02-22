@@ -1,6 +1,6 @@
 {
   "name": "actions-flow",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Conjunto de GitHub Reusable Workflows para padronizar CI, cobertura, promoção de código e releases automatizados, com suporte a múltiplas stacks.",
   "homepage": "https://github.com/heliomarpm/actions-flow#readme",
   "bugs": {

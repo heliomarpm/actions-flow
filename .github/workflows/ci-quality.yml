@@ -118,31 +118,6 @@ jobs:
       if: steps.stack.outputs.value == ''
       run: fail "Stack not detected. Check project_path or repository structure."
 
-    # - name: 🧾 Analyze commits (semantic-release)
-    #   id: commit_validation
-    #   run: |
-    #     cd "$REUSABLE_PATH"
-
-    #     npm init -y >/dev/null 2>&1
-    #     npm install semantic-release @semantic-release/commit-analyzer >/dev/null 2>&1
-
-    #     RESULT=$(node scripts/shared/analyze-commits.js)
-
-    #     echo "$RESULT" > commit.json
-
-    #     VALID=$(jq -r .valid commit.json)
-    #     RELEASE=$(jq -r .release commit.json)
-    #     BREAKING=$(jq -r .breaking commit.json)
-
-    #     echo "valid=$VALID" >> $GITHUB_OUTPUT
-    #     echo "release=$RELEASE" >> $GITHUB_OUTPUT
-    #     echo "breaking=$BREAKING" >> $GITHUB_OUTPUT
-
-    #     if [ "$VALID" != "true" ]; then
-    #       echo "❌ Invalid commit messages detected"
-    #       exit 1
-    #     fi
-
     - name: ▶️ Run unit tests
       working-directory: ${{ steps.path.outputs.value }}
       run: |
@@ -203,8 +178,8 @@ jobs:
         HEAD_LINE=${{ steps.head-coverage.outputs.line || 0 }}
         BASE_LINE=${{ steps.base-coverage.outputs.line || 0 }}
 
-        BELOW_MIN=$(awk "BEGIN {print ($LINE < $MIN)}")
-        DELTA=$(awk "BEGIN {print ($LINE - $BASE_LINE)}")
+        BELOW_MIN=$(awk "BEGIN {print ($HEAD_LINE < $MIN)}")
+        DELTA=$(awk "BEGIN {print ($HEAD_LINE - $BASE_LINE)}")
 
         if [ "$BELOW_MIN" -eq 1 ]; then
           STATUS="failed"
@@ -233,7 +208,7 @@ jobs:
         cat <<EOF > "$FILE"
         {
           "status": "$STATUS",
-          "line": $LINE,
+          "line": $HEAD_LINE,
           "base": $BASE_LINE,
           "delta": "$DELTA"
           "min": $MIN,
@@ -244,7 +219,7 @@ jobs:
         EOF
 
         echo "base=$BASE_LINE" >> $GITHUB_OUTPUT
-        echo "line=$LINE" >> $GITHUB_OUTPUT
+        echo "line=$HEAD_LINE" >> $GITHUB_OUTPUT
         echo "delta=$DELTA" >> $GITHUB_OUTPUT
         echo "min=$MIN" >> $GITHUB_OUTPUT
         echo "status=$STATUS" >> $GITHUB_OUTPUT
@@ -254,7 +229,7 @@ jobs:
 
         echo "--------------------------------------"
         log "Status: $STATUS"
-        log "Head Coverage: $LINE%"
+        log "Head Coverage: $HEAD_LINE%"
         log "Base Coverage: $BASE_LINE%"
         log "Delta: $DELTA_DISPLAY"
         log "Minimum: $MIN%"

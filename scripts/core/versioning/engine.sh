@@ -37,7 +37,7 @@ if [ ! -d "node_modules" ]; then
   npm install --silent
 fi
 
-node versioning.js \
+node versioning.mjs \
   --mode="$MODE" \
   --strict="$STRICT" \
   --output="$OUT_FILE"

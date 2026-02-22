@@ -6,7 +6,7 @@ echo "🚀 Node.js coverage plugin"
 COVERAGE_COMMAND="${COVERAGE_COMMAND:-}"
 RAW_FILE="coverage/coverage-summary.json"
 
-source "$(dirname "$0")/../shell-helpers.sh"
+source "$(dirname "$0")/../../shared/shell-helpers.sh"
 
 output_result() {
   local LINE=${1:-0}

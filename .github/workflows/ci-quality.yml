@@ -13,22 +13,17 @@ on:
         required: false
         type: string
         default: "."
-      project_private:
-        description: 'Source repository is private. GH_TOKEN will be required if the repository is private.'
-        required: false
-        type: boolean
-        default: false
+      # project_private:
+      #   description: 'Source repository is private. GH_TOKEN will be required if the repository is private.'
+      #   required: false
+      #   type: boolean
+      #   default: false
 
       coverage_base_branch:
         description: 'Base branch for comparative coverage (decrease mode) (default: main)'
         required: false
         type: string
         default: "main"
-      coverage_strategy:
-        description: 'Coverage strategy (custom | empty for auto-detect)'
-        required: false
-        type: string
-        default: "auto"
       coverage_command:
         description: 'Command to calculate coverage percentage'
         required: false
@@ -38,7 +33,7 @@ on:
         type: number
         required: false
         default: 80
-      coverage_mode:
+      coverage_strict_mode:
         description: 'Coverage mode (info | block | decrease)'
         type: string
         required: false
@@ -66,17 +61,29 @@ jobs:
     env:
       REUSABLE_PATH: ${{ github.workspace }}/__reusable_files__
       BASH_ENV: ${{ github.workspace }}/__reusable_files__/scripts/shared/shell-helpers.sh
-      NORMALIZED_COVERAGE: ${{ github.workspace }}/coverage/coverage-summary.normalized.json
+      QUALITY_FILE: ${{ github.workspace }}/quality-result.json
+      COVERAGE_FILE: ${{ github.workspace }}/coverage-result.json
+      COMMIT_FILE: ${{ github.workspace }}/commit-result.json
 
     steps:
+    # - name: 📌 Checkout consumer repository (private)
+    #   if: ${{ inputs.project_private }}
+    #   uses: actions/checkout@v4
+    #   with:
+    #     token: ${{ secrets.GH_TOKEN }}
+
+    # - name: 📌 Checkout consumer repository (public)
+    #   if: ${{ inputs.project_private == false }}
+    #   uses: actions/checkout@v4
+
     - name: 📌 Checkout consumer repository (private)
-      if: ${{ inputs.project_private }}
+      if: ${{ secrets.GH_TOKEN }}
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GH_TOKEN }}
 
     - name: 📌 Checkout consumer repository (public)
-      if: ${{ inputs.project_private == false }}
+      if: ${{ secrets.GH_TOKEN == null }}
       uses: actions/checkout@v4
 
     - name: 📌 Checkout reusable repository
@@ -121,46 +128,58 @@ jobs:
       if: steps.stack.outputs.value == ''
       run: fail "Stack not detected. Check project_path or repository structure."
 
+    # - name: 🧾 Analyze commits (semantic-release)
+    #   id: commit_validation
+    #   run: |
+    #     cd "$REUSABLE_PATH"
+
+    #     npm init -y >/dev/null 2>&1
+    #     npm install semantic-release @semantic-release/commit-analyzer >/dev/null 2>&1
+
+    #     RESULT=$(node scripts/shared/analyze-commits.js)
+
+    #     echo "$RESULT" > commit.json
+
+    #     VALID=$(jq -r .valid commit.json)
+    #     RELEASE=$(jq -r .release commit.json)
+    #     BREAKING=$(jq -r .breaking commit.json)
+
+    #     echo "valid=$VALID" >> $GITHUB_OUTPUT
+    #     echo "release=$RELEASE" >> $GITHUB_OUTPUT
+    #     echo "breaking=$BREAKING" >> $GITHUB_OUTPUT
+
+    #     if [ "$VALID" != "true" ]; then
+    #       echo "❌ Invalid commit messages detected"
+    #       exit 1
+    #     fi
+
     - name: ▶️ Run unit tests
       working-directory: ${{ steps.path.outputs.value }}
       run: |
         STACK="${{ steps.stack.outputs.value }}"
         SCRIPT="$REUSABLE_PATH/scripts/plugins/$STACK/test.sh"
         chmod +x "$SCRIPT"
-        "$SCRIPT"
+        $SCRIPT
 
     - name: 📊 Run coverage tests
-      id: coverage
+      id: head-coverage
       continue-on-error: ${{ inputs.coverage_continue_on_failure }}
       working-directory: ${{ steps.path.outputs.value }}
       env:
-        COVERAGE_STRATEGY: ${{ inputs.coverage_strategy }}
         COVERAGE_COMMAND: ${{ inputs.coverage_command }}
-        REPO_ROOT: ${{ github.workspace }}
-        NORMALIZED_COVERAGE: ${{ env.NORMALIZED_COVERAGE }}
       run: |
         STACK="${{ steps.stack.outputs.value }}"
         SCRIPT="$REUSABLE_PATH/scripts/plugins/$STACK/coverage.sh"
         chmod +x "$SCRIPT"
 
-        "$SCRIPT" || true
-
-        FILE="${{ env.NORMALIZED_COVERAGE }}"
-
-        if [ ! -f "$FILE" ]; then
-          echo "⚠️ Coverage not produced → defaulting to 0"
-          mkdir -p coverage
-          cat <<EOF > "$FILE"
-        { "line": 0 }
-        EOF
-        fi
-
-        LINE=$(jq '.line' "$FILE")
-        echo "line=$LINE" >> $GITHUB_OUTPUT
+        $SCRIPT || true
 
     - name: 📉 Get base branch coverage (for decrease mode)
       id: base-coverage
-      # if: inputs.coverage_mode == 'decrease'
+      continue-on-error: ${{ inputs.coverage_continue_on_failure }}
+      working-directory: ${{ steps.path.outputs.value }}
+      env:
+        COVERAGE_COMMAND: ${{ inputs.coverage_command }}
       run: |
         BASE_REF="${{ github.base_ref || inputs.coverage_base_branch }}"
 
@@ -182,92 +201,34 @@ jobs:
         chmod +x "$SCRIPT"
 
         "$SCRIPT" || true
-
-        FILE="${{ env.NORMALIZED_COVERAGE }}"
-
-        if [ -f "$FILE" ]; then
-          BASE_LINE=$(jq '.line' "$FILE")
-        else
-          BASE_LINE=0
-        fi
-
-        echo "Base coverage: $BASE_LINE%"
-        echo "line=$BASE_LINE" >> $GITHUB_OUTPUT
-
+        
         # Volta para branch original
         git checkout -
 
-    - name: ✅ Evaluate coverage
+    - name: 🛡️ Evaluate coverage
       id: eval-coverage
-      run: |
-        FILE="${{ env.NORMALIZED_COVERAGE }}"
-
-        LINE=$(jq '.line' "$FILE")
+      run: |        
         MIN=${{ inputs.coverage_min }}
-        MODE="${{ inputs.coverage_mode }}"
+        MODE="${{ inputs.coverage_strict_mode }}"
+        HEAD_LINE=${{ steps.head-coverage.outputs.line || 0 }}
         BASE_LINE=${{ steps.base-coverage.outputs.line || 0 }}
 
-        # BELOW_MIN=$(echo "$LINE < $MIN" | bc -l) 
-        # DELTA=$(echo "$LINE - $BASE_LINE" | bc -l)
         BELOW_MIN=$(awk "BEGIN {print ($LINE < $MIN)}")
         DELTA=$(awk "BEGIN {print ($LINE - $BASE_LINE)}")
-
-        if [ "$DELTA" -gt 0 ]; then
-          DELTA_DISPLAY="📈 +$DELTA%"
-        elif [ "$DELTA" -lt 0 ]; then
-          DELTA_DISPLAY="📉 $DELTA%"
-        else
-          DELTA_DISPLAY="➖ 0%"
-        fi
-
-        STATUS="passed"
-        REASON="coverage-enough"
-        INTERPRETATION="A cobertura está **de acordo** com o limite exigido."
 
         if [ "$BELOW_MIN" -eq 1 ]; then
           STATUS="failed"
           REASON="below-minimum"
           INTERPRETATION="A cobertura está **abaixo** do limite mínimo. Adicione mais testes antes de mesclar."
-        fi
-
-        if [ "$MODE" = "decrease" ] && [ "$DELTA" -lt 0 ]; then
+        elif [ "$MODE" = "decrease" ] && [ "$DELTA" -lt 0 ]; then
           STATUS="failed"
           REASON="coverage-decreased"
           INTERPRETATION="A cobertura diminuiu. Adicione mais testes antes de mesclar."
+        else
+          STATUS="passed"
+          REASON="coverage-enough"
+          INTERPRETATION="A cobertura está **de acordo** com o limite exigido."
         fi
-
-        cat <<EOF > "$FILE"
-        {
-          "base": $BASE_LINE,
-          "line": $LINE,
-          "delta": "$DELTA_DISPLAY"
-          "min": $MIN,
-          "status": "$STATUS",
-          "mode": "$MODE",
-          "reason": "$REASON",
-          "interpretation": "$INTERPRETATION"
-        }
-        EOF
-
-        echo "base=$BASE_LINE" >> $GITHUB_OUTPUT
-        echo "line=$LINE" >> $GITHUB_OUTPUT
-        echo "delta=$DELTA_DISPLAY" >> $GITHUB_OUTPUT
-        echo "min=$MIN" >> $GITHUB_OUTPUT
-        echo "status=$STATUS" >> $GITHUB_OUTPUT
-        echo "mode=$MODE" >> $GITHUB_OUTPUT
-        echo "reason=$REASON" >> $GITHUB_OUTPUT
-        echo "interpretation=$INTERPRETATION" >> $GITHUB_OUTPUT
-
-        echo "--------------------------------------"
-        log "Coverage Base: $BASE_LINE%"
-        log "Coverage: $LINE%"
-        log "Minimum: $MIN%"
-        log "Delta: $DELTA_DISPLAY"
-        log "Status: $STATUS"
-        log "Mode: $MODE"
-        log "Reason: $REASON"
-        log "Interpretation: $INTERPRETATION"
-        echo "--------------------------------------"
 
         if [ "$STATUS" = "failed" ]; then
           if [ "$MODE" = "block" ]; then
@@ -278,34 +239,126 @@ jobs:
           fi
         fi
 
-    - name: 📦 Upload coverage artifact
+        FILE="${{ env.COVERAGE_FILE }}"
+        cat <<EOF > "$FILE"
+        {
+          "status": "$STATUS",
+          "line": $LINE,
+          "base": $BASE_LINE,
+          "delta": "$DELTA"
+          "min": $MIN,
+          "mode": "$MODE",
+          "reason": "$REASON",
+          "interpretation": "$INTERPRETATION"
+        }
+        EOF
+
+        echo "base=$BASE_LINE" >> $GITHUB_OUTPUT
+        echo "line=$LINE" >> $GITHUB_OUTPUT
+        echo "delta=$DELTA" >> $GITHUB_OUTPUT
+        echo "min=$MIN" >> $GITHUB_OUTPUT
+        echo "status=$STATUS" >> $GITHUB_OUTPUT
+        echo "mode=$MODE" >> $GITHUB_OUTPUT
+        echo "reason=$REASON" >> $GITHUB_OUTPUT
+        echo "interpretation=$INTERPRETATION" >> $GITHUB_OUTPUT
+
+        echo "--------------------------------------"
+        log "Status: $STATUS"
+        log "Head Coverage: $LINE%"
+        log "Base Coverage: $BASE_LINE%"
+        log "Delta: $DELTA_DISPLAY"
+        log "Minimum: $MIN%"
+        log "Mode: $MODE"
+        log "Reason: $REASON"
+        log "Interpretation: $INTERPRETATION"
+        echo "--------------------------------------"
+
+    - name: ▶️ Run validate commitlint
+      id: commitlint
+      run: |
+        SCRIPT="$REUSABLE_PATH/scripts/core/versioning/engine.sh"
+        chmod +x "$SCRIPT"
+
+        $SCRIPT validate
+
+    - name: 🛡️ Evaluate commitlint
+      id: eval-commitlint
+      run: |
+        FILE="${{ steps.commitlint.outputs.file }}"
+
+        MODE=$(jq '.mode' "$FILE")
+        STRICT=$(jq '.strict' "$FILE")
+        VALIDATION=$(jq '.validation' "$FILE")
+        ANALYSIS=$(jq '.analysis' "$FILE")
+        VERSION=$(jq '.version' "$FILE")
+
+        echo "mode=$MODE" >> $GITHUB_OUTPUT
+        echo "strict=$STRICT" >> $GITHUB_OUTPUT
+        echo "validation=$VALIDATION" >> $GITHUB_OUTPUT
+        echo "analysis=$ANALYSIS" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+        echo "--------------------------------------"
+        log "Commitlint Result: "
+        log "Mode: $MODE"
+        log "Strict: $STRICT"
+        log "Validation: $VALIDATION"
+        log "Analysis: $ANALYSIS"
+        log "Version: $VERSION"        
+        echo "--------------------------------------"
+
+    - name: ⚙️ Write Quality Result 
+      id: write-quality-result
+      run: |
+        COV_FILE=${{ steps.eval-coverage.outputs.file }}
+        COMMIT_FILE=${{ steps.commitlint.outputs.file }}
+
+        FILE="${{ env.QUALITY_FILE }}"
+
+        cat <<EOF > "$FILE"
+        {
+          "coverage": $(cat "$COV_FILE"),
+          "commitlint": $(cat "$COMMIT_FILE")
+        }
+        EOF
+
+    - name: 📥 Upload Artifact Quality Result
       uses: actions/upload-artifact@v4
       continue-on-error: true
       with:
-        name: coverage--${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
-        path: ${{ env.NORMALIZED_COVERAGE }}
+        name: quality-report-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+        path: ${{ env.QUALITY_FILE }}
         if-no-files-found: ignore
 
-    - name: Publish quality result
+    - name: 📥 Upload Checks Quality Result 
       if: always()
       uses: actions/github-script@v7
       with:
         github-token: ${{ github.token }}
         script: |
-          const result = {
-            coverage: {
-              line: Number("${{ steps.eval-coverage.outputs.line || 0 }}"),
-              base: Number("${{ steps.eval-coverage.outputs.base || 0 }}"),
-              delta: "${{ steps.eval-coverage.outputs.delta || '0' }}",
-              minimum: Number("${{ inputs.coverage_min || 0 }}"),
-              mode: "${{ inputs.coverage_mode }}",
-              status: "${{ steps.eval-coverage.outputs.status || 'unknown' }}",
-              reason: "${{ steps.eval-coverage.outputs.reason || 'not evaluated' }}",
-              interpretation: "${{ steps.eval-coverage.outputs.interpretation || 'not evaluated' }}"
-            }
-          };
 
-          conclusion = result.status === "failed" && result.mode !== "info" ? "failure" : "success";
+          const result = "${{ env.QUALITY_FILE }}";
+          # const result = {
+          #   coverage: {
+          #     line: Number("${{ steps.eval-coverage.outputs.line || 0 }}"),
+          #     base: Number("${{ steps.eval-coverage.outputs.base || 0 }}"),
+          #     delta: "${{ steps.eval-coverage.outputs.delta || '0' }}",
+          #     minimum: Number("${{ inputs.coverage_min || 0 }}"),
+          #     mode: "${{ inputs.coverage_strict_mode }}",
+          #     status: "${{ steps.eval-coverage.outputs.status || 'unknown' }}",
+          #     reason: "${{ steps.eval-coverage.outputs.reason || 'not evaluated' }}",
+          #     interpretation: "${{ steps.eval-coverage.outputs.interpretation || 'not evaluated' }}"
+          #   },
+          #   commit: {
+          #     valid: ${{ steps.commit_validation.outputs.valid == '1' }},
+          #     release: "${{ steps.commit_validation.outputs.release }}",
+          #     breaking: ${{ steps.commit_validation.outputs.breaking == '1' }}
+          #   }
+          # };
+          
+          const coverageFailed = result.coverage.mode !== "info" && result.coverage.status === "failed";
+          const commitFailed = result.commitlint.validation.valid === false;
+          const conclusion = (coverageFailed || commitFailed) ? "failure" : "success";
 
           await github.rest.checks.create({
             owner: context.repo.owner,
@@ -363,6 +416,15 @@ jobs:
           fi
           STATUS_DISPLAY+=" \`${{ steps.eval-coverage.outputs.status }}\`"
 
+          DELTA="${{ steps.eval-coverage.outputs.delta }}"
+          if [ "$DELTA" -gt 0 ]; then
+            DELTA_DISPLAY="📈 +$DELTA%"
+          elif [ "$DELTA" -lt 0 ]; then
+            DELTA_DISPLAY="📉 $DELTA%"
+          else
+            DELTA_DISPLAY="➖ 0%"
+          fi
+
           echo ""
           echo "> ${{ steps.eval-coverage.outputs.interpretation }}"
           echo ""
@@ -370,15 +432,22 @@ jobs:
           echo "|------------ |---------------------------------------------- |"
           echo "| Base Branch | ${{ steps.eval-coverage.outputs.base }}%      |"
           echo "| Coverage    | **${{ steps.eval-coverage.outputs.line }}%**  |"
-          echo "| Delta Δ     | ${{ steps.eval-coverage.outputs.delta }}      |"
+          echo "| Delta Δ     | $DELTA_DISPLAY                                |"
           echo "| Minimum     | ${{ steps.eval-coverage.outputs.min }}%       |"
           echo "| Mode        | \`${{ steps.eval-coverage.outputs.mode }}\`   |"
           echo "| Status      | $STATUS_DISPLAY                               |"
           echo "| Reason      | \`${{ steps.eval-coverage.outputs.reason }}\` |"
-          
-          if [ -f "${{ env.NORMALIZED_COVERAGE }}" ]; then
+
+          echo ""
+          echo "### 🧾 Commit Validation"
+          echo ""
+          echo "| Valid | Release Type | Next Version |"
+          echo "|-------|-------------|----------|"
+          echo "| ${{ steps.commitlint.validation.valid }} | ${{ steps.commitlint.mode }} | ${{ steps.commitlint.version.next }} |"
+
+          if [ -f "${{ env.QUALITY_FILE }}" ]; then
             echo ""
             echo "---"
-            echo "**📦 Artifacts:** coverage-report"
+            echo "**📦 Artifacts:** quality-report"
           fi
         } >> $GITHUB_STEP_SUMMARY

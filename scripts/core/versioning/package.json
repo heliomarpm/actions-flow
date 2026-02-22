@@ -1,7 +1,7 @@
 {
   "name": "actions-flow-versioning",
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
   "private": true,
     "dependencies": {
     "semantic-release": "^25.0.3",

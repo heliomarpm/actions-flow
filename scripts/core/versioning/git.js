@@ -1,5 +1,5 @@
-import { execSync } from 'child_process'
-import semver from 'semver'
+const { execSync } = require('child_process'); 
+const semver = require('semver');
 
 export async function getCommits() {
   const raw = execSync('git log --pretty=format:%H:::%s', { encoding: 'utf-8' })

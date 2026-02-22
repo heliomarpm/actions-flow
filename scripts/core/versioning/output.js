@@ -1,4 +1,4 @@
-import fs from 'fs'
+const fs = require('fs');
 
 export async function writeOutput(data, file) {
 

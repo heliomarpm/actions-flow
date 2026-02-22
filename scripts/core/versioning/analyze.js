@@ -1,5 +1,5 @@
-import analyzeCommit from '@semantic-release/commit-analyzer'
-import parser from 'conventional-commits-parser'
+const analyzeCommit = require('@semantic-release/commit-analyzer');
+const parser = require('conventional-commits-parser');
 
 function priority(type) {
   if (type === 'major') return 3

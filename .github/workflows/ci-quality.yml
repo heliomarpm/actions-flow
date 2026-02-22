@@ -231,7 +231,7 @@ jobs:
         log "Status: $STATUS"
         log "Head Coverage: $HEAD_LINE%"
         log "Base Coverage: $BASE_LINE%"
-        log "Delta: $DELTA_DISPLAY"
+        log "Delta: $DELTA"
         log "Minimum: $MIN%"
         log "Mode: $MODE"
         log "Reason: $REASON"

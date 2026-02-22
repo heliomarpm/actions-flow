@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "🚀 Node.js coverage plugin"
+source "$(dirname "$0")/../../shared/shell-helpers.sh"
+log "🚀 Node.js coverage plugin"
 
 COVERAGE_COMMAND="${COVERAGE_COMMAND:-}"
 RAW_FILE="coverage/coverage-summary.json"
-
-source "$(dirname "$0")/../../shared/shell-helpers.sh"
 
 output_result() {
   local LINE=${1:-0}
@@ -66,7 +65,7 @@ fi
 # ------------------------------------------------------------
 # 3️⃣ Execute custom command
 # ------------------------------------------------------------
-if [ -z "$COVERAGE_COMMAND" ]; then
+if [ ! -z "$COVERAGE_COMMAND" ]; then
   log "Executing custom coverage command: $COVERAGE_COMMAND"
   eval "$COVERAGE_COMMAND" 
 

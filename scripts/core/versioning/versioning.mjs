@@ -1,8 +1,8 @@
-const { getCommits, getCurrentVersion } = require('./git.js');
-const { validateCommits } = require('./validate.js');
-const { analyzeRelease } = require('./analyze.js');
-const { calculateNextVersion } = require('./calculate-version.js');
-const { writeOutput } = require('./output.js');
+import { getCommits, getCurrentVersion } from './git';
+import { validateCommits } from './validate';
+import { analyzeRelease } from './analyze';
+import { calculateNextVersion } from './calculate-version';
+import { writeOutput } from './output';
 
 function parseArgs() {
   const args = {}

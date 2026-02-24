@@ -44,4 +44,4 @@ node versioning.mjs \
 
 popd >/dev/null
 
-echo "versioning_file=$OUT_FILE" >> "$GITHUB_OUTPUT"
+echo "file=$OUT_FILE" >> "$GITHUB_OUTPUT"

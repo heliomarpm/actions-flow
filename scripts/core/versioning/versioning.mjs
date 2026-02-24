@@ -23,7 +23,7 @@ const commits = await getCommits()
 const currentVersion = await getCurrentVersion()
 
 const validation = await validateCommits(commits)
-// const analysis = await analyzeRelease(commits)
+const analysis = {hasRelease: false} //await analyzeRelease(commits)
 
 let version = {
   current: currentVersion,
@@ -42,14 +42,14 @@ if (mode === 'publish' && version.next) {
 await writeOutput({
   mode,
   strict,
-  // validation,
-  analysis,
+  validation,
+  // analysis,
   version
 }, output)
 
 console.log(`mode=${mode}, strict=${strict}`)
 console.log("validation", validation)
-console.log("analysis", analysis)
+// console.log("analysis", analysis)
 console.log("version", version)
 if (strict && !validation.valid) {
   process.exit(1)

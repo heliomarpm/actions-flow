@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
+  "scripts": {
+    "validate": "node versioning.mjs --mode=validate --strict=false --output=versioning-result.json",
+    "validate:s": "node versioning.mjs --mode=validate --strict=true --output=versioning-result.json"
+  },
   "devDependencies": {
     "@commitlint/config-conventional": "^20.4.2",
     "@commitlint/lint": "^20.4.2",

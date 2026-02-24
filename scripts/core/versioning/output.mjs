@@ -12,11 +12,11 @@ export async function writeOutput(data, file) {
       strict_required: data.strict
     },
 
-    analysis: {
-      has_release: data.analysis.hasRelease,
-      release_type: data.analysis.releaseType,
-      breaking: data.analysis.breaking
-    },
+    // analysis: {
+    //   has_release: data.analysis.hasRelease,
+    //   release_type: data.analysis.releaseType,
+    //   breaking: data.analysis.breaking
+    // },
 
     version: {
       current: data.version.current,

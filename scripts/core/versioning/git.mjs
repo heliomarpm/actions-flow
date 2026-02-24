@@ -16,8 +16,8 @@ export async function getCommits() {
 export async function getCurrentVersion() {
   try {
     const tag = execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim()
-    return semver.valid(tag.replace(/^v/, '')) || '0.0.2'
+    return semver.valid(tag.replace(/^v/, '')) || '0.0.0'
   } catch {
-    return '0.0.1'
+    return '0.0.1' // verificar porque ocorre erro na pipe se valor igual a 0.0.0
   }
 }

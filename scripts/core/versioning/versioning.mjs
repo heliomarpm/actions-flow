@@ -23,7 +23,7 @@ const commits = await getCommits()
 const currentVersion = await getCurrentVersion()
 
 const validation = await validateCommits(commits)
-const analysis = {hasRelease: false} //await analyzeRelease(commits)
+const analysis = {hasRelease: true} //await analyzeRelease(commits)
 
 let version = {
   current: currentVersion,

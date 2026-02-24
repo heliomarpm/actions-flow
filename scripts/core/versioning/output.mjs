@@ -1,7 +1,8 @@
 import fs from 'fs';
 
 export async function writeOutput(data, file) {
-
+  console.log("writeOutput");
+  
   const payload = {
     contract: "actions-flow/versioning@1",
     mode: data.mode,
@@ -25,5 +26,7 @@ export async function writeOutput(data, file) {
     }
   }
 
+  
   fs.writeFileSync(file, JSON.stringify(payload, null, 2))
+  console.log(`Writing output to ${file}`);
 }

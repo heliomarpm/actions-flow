@@ -269,7 +269,7 @@ jobs:
         echo "strict=$STRICT" >> $GITHUB_OUTPUT
         echo "validation=$VALIDATION" >> $GITHUB_OUTPUT
         echo "analysis=$ANALYSIS" >> $GITHUB_OUTPUT
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        # echo "version=$VERSION" >> $GITHUB_OUTPUT
 
         echo "--------------------------------------"
         log "Commitlint Result: "

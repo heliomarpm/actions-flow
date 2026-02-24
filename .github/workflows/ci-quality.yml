@@ -39,11 +39,11 @@ on:
         required: false
         default: "info"
 
-      coverage_continue_on_failure:
-        description: 'Continue pipeline even if tests fail. (default: true)'
+      commit_validation_mode:
+        description: 'Commit validation mode (info | block)'
+        type: string
         required: false
-        type: boolean
-        default: true
+        default: "info"
 
     secrets:
       GH_TOKEN:
@@ -53,6 +53,9 @@ on:
 # concurrency:
 #   group: ci-quality-${{ github.ref }}
 #   cancel-in-progress: true
+permissions:
+  contents: write       # → permite criar e atualizar tags, commits e pushes no repositório.
+  checks: write         # → permite criar e atualizar check run
 
 jobs:
   quality:
@@ -66,15 +69,20 @@ jobs:
       COMMIT_FILE: ${{ github.workspace }}/commit-result.json
 
     steps:
-    - name: 📌 Checkout consumer repository (private)
-      if: ${{ inputs.project_private }}
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GH_TOKEN }}
+    # - name: 📌 Checkout consumer repository (private)
+    #   if: ${{ inputs.project_private }}
+    #   uses: actions/checkout@v4
+    #   with:
+    #     token: ${{ secrets.GH_TOKEN }}
 
-    - name: 📌 Checkout consumer repository (public)
-      if: ${{ inputs.project_private == false }}
+    # - name: 📌 Checkout consumer repository (public)
+    #   if: ${{ inputs.project_private == false }}
+    #   uses: actions/checkout@v4
+
+    - name: 📌 Checkout consumer repository
       uses: actions/checkout@v4
+      with: 
+        token: ${{ inputs.project_private && secrets.GH_TOKEN || github.token }}
 
     - name: 📌 Checkout reusable repository
       uses: actions/checkout@v4
@@ -128,7 +136,7 @@ jobs:
 
     - name: 📊 Run coverage tests
       id: head-coverage
-      continue-on-error: ${{ inputs.coverage_continue_on_failure }}
+      continue-on-error: true
       working-directory: ${{ steps.path.outputs.value }}
       env:
         COVERAGE_COMMAND: ${{ inputs.coverage_command }}
@@ -141,7 +149,7 @@ jobs:
 
     - name: 📉 Get base branch coverage (for decrease mode)
       id: base-coverage
-      continue-on-error: ${{ inputs.coverage_continue_on_failure }}
+      continue-on-error: true
       working-directory: ${{ steps.path.outputs.value }}
       env:
         COVERAGE_COMMAND: ${{ inputs.coverage_command }}

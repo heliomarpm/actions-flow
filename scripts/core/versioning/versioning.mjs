@@ -1,8 +1,8 @@
-import { getCommits, getCurrentVersion } from './git';
-import { validateCommits } from './validate';
-import { analyzeRelease } from './analyze';
-import { calculateNextVersion } from './calculate-version';
-import { writeOutput } from './output';
+import { getCommits, getCurrentVersion } from './git.mjs';
+import { validateCommits } from './validate.mjs';
+import { analyzeRelease } from './analyze.mjs';
+import { calculateNextVersion } from './calculate-version.mjs';
+import { writeOutput } from './output.mjs';
 
 function parseArgs() {
   const args = {}
@@ -23,7 +23,7 @@ const commits = await getCommits()
 const currentVersion = await getCurrentVersion()
 
 const validation = await validateCommits(commits)
-const analysis = await analyzeRelease(commits)
+// const analysis = await analyzeRelease(commits)
 
 let version = {
   current: currentVersion,
@@ -42,11 +42,15 @@ if (mode === 'publish' && version.next) {
 await writeOutput({
   mode,
   strict,
-  validation,
+  // validation,
   analysis,
   version
 }, output)
 
+console.log(`mode=${mode}, strict=${strict}`)
+console.log("validation", validation)
+console.log("analysis", analysis)
+console.log("version", version)
 if (strict && !validation.valid) {
   process.exit(1)
 }

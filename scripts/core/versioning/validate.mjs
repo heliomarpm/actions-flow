@@ -1,5 +1,5 @@
-const lint = require('@commitlint/lint');
-const load = require('@commitlint/load');
+import lint from '@commitlint/lint';
+import load from '@commitlint/load';
 
 function shouldIgnore(message) {
   return (

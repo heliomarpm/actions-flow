@@ -1,4 +1,4 @@
-const load = require('@commitlint/load');
+import load from '@commitlint/load';
 
 export async function loadCommitlint() {
 

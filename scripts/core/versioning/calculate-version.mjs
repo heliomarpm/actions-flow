@@ -1,4 +1,4 @@
-const semver = require('semver');
+import semver from 'semver';
 
 export function calculateNextVersion(current, type) {
   if (!type || type === 'none') return null

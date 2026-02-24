@@ -259,26 +259,26 @@ jobs:
       run: |
         FILE="${{ steps.commitlint.outputs.file }}"
 
-        MODE=$(jq '.mode' "$FILE")
-        STRICT=$(jq '.strict' "$FILE")
-        VALIDATION=$(jq '.validation' "$FILE")
-        ANALYSIS=$(jq '.analysis' "$FILE")
-        VERSION=$(jq '.version' "$FILE")
+    #     MODE=$(jq '.mode' "$FILE")
+    #     STRICT=$(jq '.strict' "$FILE")
+    #     VALIDATION=$(jq '.validation' "$FILE")
+    #     ANALYSIS=$(jq '.analysis' "$FILE")
+    #     VERSION=$(jq '.version' "$FILE")
 
-        echo "mode=$MODE" >> $GITHUB_OUTPUT
-        echo "strict=$STRICT" >> $GITHUB_OUTPUT
-        echo "validation=$VALIDATION" >> $GITHUB_OUTPUT
-        echo "analysis=$ANALYSIS" >> $GITHUB_OUTPUT
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    #     echo "mode=$MODE" >> $GITHUB_OUTPUT
+    #     echo "strict=$STRICT" >> $GITHUB_OUTPUT
+    #     echo "validation=$VALIDATION" >> $GITHUB_OUTPUT
+    #     echo "analysis=$ANALYSIS" >> $GITHUB_OUTPUT
+    #     echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-        echo "--------------------------------------"
-        log "Commitlint Result: "
-        log "Mode: $MODE"
-        log "Strict: $STRICT"
-        log "Validation: $VALIDATION"
-        log "Analysis: $ANALYSIS"
-        log "Version: $VERSION"        
-        echo "--------------------------------------"
+    #     echo "--------------------------------------"
+    #     log "Commitlint Result: "
+    #     log "Mode: $MODE"
+    #     log "Strict: $STRICT"
+    #     log "Validation: $VALIDATION"
+    #     log "Analysis: $ANALYSIS"
+    #     log "Version: $VERSION"        
+    #     echo "--------------------------------------"
 
     - name: ⚙️ Write Quality Result 
       id: write-quality-result
@@ -310,11 +310,30 @@ jobs:
         github-token: ${{ github.token }}
         script: |
 
-          import fs from "fs"; 
+          # import fs from "fs"; 
           
-          const filePath = "${{ env.QUALITY_FILE }}";           
-          const raw = fs.readFileSync(filePath, "utf-8"); 
-          const result = JSON.parse(raw);
+          # const filePath = "${{ env.QUALITY_FILE }}";           
+          # const raw = fs.readFileSync(filePath, "utf-8"); 
+          # const result = JSON.parse(raw);
+
+          const result = {
+            coverage: {
+              line: Number("${{ steps.eval-coverage.outputs.line || 0 }}"),
+              base: Number("${{ steps.eval-coverage.outputs.base || 0 }}"),
+              delta: "${{ steps.eval-coverage.outputs.delta || '0' }}",
+              minimum: Number("${{ inputs.coverage_min || 0 }}"),
+              mode: "${{ inputs.coverage_strict_mode }}",
+              status: "${{ steps.eval-coverage.outputs.status || 'unknown' }}",
+              reason: "${{ steps.eval-coverage.outputs.reason || 'not evaluated' }}",
+              interpretation: "${{ steps.eval-coverage.outputs.interpretation || 'not evaluated' }}"
+            }
+          }
+            # commit: {
+            #   valid: ${{ steps.commit_validation.outputs.valid == '1' }},
+            #   release: "${{ steps.commit_validation.outputs.release }}",
+            #   breaking: ${{ steps.commit_validation.outputs.breaking == '1' }}
+            # }
+          # };
           
           const coverageFailed = result.coverage.mode !== "info" && result.coverage.status === "failed";
           const commitFailed = result.commitlint.validation.valid === false;
@@ -398,12 +417,12 @@ jobs:
           echo "| Status      | $STATUS_DISPLAY                               |"
           echo "| Reason      | \`${{ steps.eval-coverage.outputs.reason }}\` |"
 
-          echo ""
-          echo "### 🧾 Commit Validation"
-          echo ""
-          echo "| Valid | Release Type | Next Version |"
-          echo "|-------|-------------|----------|"
-          echo "| ${{ steps.commitlint.validation.valid }} | ${{ steps.commitlint.mode }} | ${{ steps.commitlint.version.next }} |"
+          # echo ""
+          # echo "### 🧾 Commit Validation"
+          # echo ""
+          # echo "| Valid | Release Type | Next Version |"
+          # echo "|-------|-------------|----------|"
+          # echo "| ${{ steps.commitlint.validation.valid }} | ${{ steps.commitlint.mode }} | ${{ steps.commitlint.version.next }} |"
 
           if [ -f "${{ env.QUALITY_FILE }}" ]; then
             echo ""

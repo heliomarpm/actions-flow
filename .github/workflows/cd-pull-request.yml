@@ -35,10 +35,10 @@ on:
         required: true
 
 permissions:
-  contents: write
-  pull-requests: write
-  checks: read
-
+  contents: write       # → permite criar e atualizar tags, commits e pushes no repositório.
+  pull-requests: write  # → se precisar criar ou atualizar pull requests
+  checks: read          # → (opcional) se precisar ler check runs
+  
 jobs:
   resolve-branch:
     runs-on: ubuntu-latest

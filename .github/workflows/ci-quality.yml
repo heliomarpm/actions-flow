@@ -218,7 +218,7 @@ jobs:
           "status": "$STATUS",
           "line": $HEAD_LINE,
           "base": $BASE_LINE,
-          "delta": "$DELTA"
+          "delta": "$DELTA",
           "min": $MIN,
           "mode": "$MODE",
           "reason": "$REASON",

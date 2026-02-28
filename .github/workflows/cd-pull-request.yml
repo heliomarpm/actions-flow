@@ -274,6 +274,7 @@ jobs:
       if: needs.resolve-branch.outputs.skip != 'true'
       # working-directory: ${{ steps.path.outputs.value }}
       run: |
+        log "hasCoverage ${{ needs.read-quality.outputs.hasCoverage }}"
         log "Cobertura: ${{ needs.read-quality.outputs.coverage.interpretation }}"
 
         if [ -n "${{ inputs.pr_body_path }}" ]; then

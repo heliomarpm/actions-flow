@@ -37,6 +37,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  checks: read
 
 jobs:
   resolve-branch:
@@ -112,9 +113,11 @@ jobs:
 
           if (!sha) { 
             core.setOutput("status", "missing"); 
-            console.log("⚠️ Nenhum SHA encontrado no contexto"); 
+            console.log("⚠️ Nenhum HASH encontrado no contexto"); 
             return; 
           }
+
+          console.log("hash: ", sha);
 
           const checks = await github.rest.checks.listForRef({
             owner: context.repo.owner,

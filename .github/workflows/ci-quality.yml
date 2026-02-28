@@ -317,6 +317,12 @@ jobs:
           const commitFailed = result.commitlint.commit.valid === false;
           const conclusion = (coverageFailed || commitFailed) ? "failure" : "success";
 
+          console.log("hash 1", wruncontext.payload?.workflow_run?.head_sha);
+          console.log("hash 2", context.payload?.pull_request?.head?.sha);
+          console.log("hash 3", context.payload?.after);
+          console.log("hash 4", context.sha);
+          //const sha = context.payload?.workflow_run?.head_sha || context.payload?.pull_request?.head?.sha || context.payload?.after || context.sha;
+
           await github.rest.checks.create({
             owner: context.repo.owner,
             repo: context.repo.repo,

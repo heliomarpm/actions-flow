@@ -310,32 +310,11 @@ jobs:
       with:
         github-token: ${{ github.token }}
         script: |
-          import fs from "fs"; 
-          
-          const filePath = "${{ env.QUALITY_FILE }}";           
-          const raw = fs.readFileSync(filePath, "utf-8"); 
-          const res = JSON.parse(raw);
-          
-          console.log(res);
-
-          const result = {
-            coverage: {
-              line: Number("${{ steps.eval-coverage.outputs.line || 0 }}"),
-              base: Number("${{ steps.eval-coverage.outputs.base || 0 }}"),
-              delta: "${{ steps.eval-coverage.outputs.delta || '0' }}",
-              minimum: Number("${{ inputs.coverage_min || 0 }}"),
-              mode: "${{ inputs.coverage_strict_mode }}",
-              status: "${{ steps.eval-coverage.outputs.status || 'unknown' }}",
-              reason: "${{ steps.eval-coverage.outputs.reason || 'not evaluated' }}",
-              interpretation: "${{ steps.eval-coverage.outputs.interpretation || 'not evaluated' }}"
-            },
-            commitlint: {
-              valid: true
-            }       
-          };
-          
+          const fs = require('fs');
+          const result = JSON.parse(fs.readFileSync(${{env.QUALITY_FILE}}, 'utf8'));
+                
           const coverageFailed = result.coverage.mode !== "info" && result.coverage.status === "failed";
-          const commitFailed = result.commitlint.valid === false;
+          const commitFailed = result.commitlint.commit.valid === false;
           const conclusion = (coverageFailed || commitFailed) ? "failure" : "success";
 
           await github.rest.checks.create({

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.3](https://github.com/heliomarpm/actions-flow/compare/v1.10.2...v1.10.3) (2026-02-28)
+
+
+### Bug Fixes
+
+* **ci-quality:** 🐛 corrigir formatação do objeto de delta na configuração ([359a995](https://github.com/heliomarpm/actions-flow/commit/359a9953716740a105cf401f108bac86aebc5097))
+
 ## [1.10.2](https://github.com/heliomarpm/actions-flow/compare/v1.10.1...v1.10.2) (2026-02-28)
 
 

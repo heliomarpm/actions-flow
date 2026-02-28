@@ -212,7 +212,7 @@ jobs:
           fi
         fi
 
-        FILE="${{ env.COVERAGE_FILE }}"
+        FILE="${{ steps.head-coverage.outputs.file  }}"
         cat <<EOF > "$FILE"
         {
           "status": "$STATUS",
@@ -226,6 +226,7 @@ jobs:
         }
         EOF
 
+        echo "file=$FILE" >> $GITHUB_OUTPUT
         echo "base=$BASE_LINE" >> $GITHUB_OUTPUT
         echo "line=$HEAD_LINE" >> $GITHUB_OUTPUT
         echo "delta=$DELTA" >> $GITHUB_OUTPUT

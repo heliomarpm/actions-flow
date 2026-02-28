@@ -275,7 +275,7 @@ jobs:
       # working-directory: ${{ steps.path.outputs.value }}
       run: |
         log "hasCoverage ${{ needs.read-quality.outputs.hasCoverage }}"
-        log "Cobertura: ${{ needs.read-quality.outputs.coverage.interpretation }}"
+        log "Cobertura: ${{ fromJson(needs.read-quality.outputs.coverage).interpretation }}"
 
         if [ -n "${{ inputs.pr_body_path }}" ]; then
           PR_BODY_PATH="${{ inputs.pr_body_path }}"
@@ -296,7 +296,7 @@ jobs:
         fi
 
         COVERAGE_BLOCK="missing"
-        COV_LINE="${{ needs.read-quality.outputs.coverage.line }}"
+        COV_LINE="${{ fromJson(needs.read-quality.outputs.coverage).line }}"
 
         # Verifica se o template contém a chave para bloco de qualidade
         if [[ "$PR_TEMPLATE" == *"{{QUALITY_GATE_RESULT}}"* ]]; then
@@ -313,14 +313,14 @@ jobs:
         log "COVERAGE_BLOCK: $COVERAGE_BLOCK"
 
         if [ "$COVERAGE_BLOCK" = "found" ]; then
-          COV_BASE="${{ needs.read-quality.outputs.coverage.base }}"
-          COV_LINE="${{ needs.read-quality.outputs.coverage.line }}"
-          COV_DELTA="${{ needs.read-quality.outputs.coverage.delta }}"
-          COV_MIN="${{ needs.read-quality.outputs.coverage.min }}"
-          COV_STATUS="${{ needs.read-quality.outputs.coverage.status }}"
-          COV_MODE="${{ needs.read-quality.outputs.coverage.mode }}"
-          COV_REASON="${{ needs.read-quality.outputs.coverage.reason }}"
-          COV_INTERPRETATION="${{ needs.read-quality.outputs.coverage.interpretation }}"
+          COV_BASE="${{ fromJson(needs.read-quality.outputs.coverage).base }}"
+          COV_LINE="${{ fromJson(needs.read-quality.outputs.coverage).line }}"
+          COV_DELTA="${{ fromJson(needs.read-quality.outputs.coverage).delta }}"
+          COV_MIN="${{ fromJson(needs.read-quality.outputs.coverage).min }}"
+          COV_STATUS="${{ fromJson(needs.read-quality.outputs.coverage).status }}"
+          COV_MODE="${{ fromJson(needs.read-quality.outputs.coverage).mode }}"
+          COV_REASON="${{ fromJson(needs.read-quality.outputs.coverage).reason }}"
+          COV_INTERPRETATION="${{ fromJson(needs.read-quality.outputs.coverage).interpretation }}"
 
           if [ "$COV_STATUS" = "passed" ]; then
             STATUS_DISPLAY="✅"
@@ -383,7 +383,7 @@ jobs:
         TITLE=${TITLE//\{\{HEAD_BRANCH\}\}/$HEAD}
         TITLE=${TITLE//\{\{BASE_BRANCH\}\}/$BASE}
 
-        STATUS_COVERAGE="${{ needs.read-quality.outputs.coverage.status }}"
+        STATUS_COVERAGE="${{ fromJson(needs.read-quality.outputs.coverage).status }}"
         if [ "$STATUS_COVERAGE" = "failed" ]; then
           ADD_LABEL="coverage-failed"
           DEL_LABEL="coverage-passed,coverage-missing"
@@ -434,12 +434,13 @@ jobs:
     - name: 🧾 Job Summary
       if: always()
       run: |
-        if [ "${{ needs.read-quality.outputs.coverage.status }}" = "failed" ]; then
+        COV_STATUS="${{ fromJson(needs.read-quality.outputs.coverage).status }}"
+        if [ "$COV_STATUS" = "failed" ]; then
           STATUS_DISPLAY="❌"
         else
           STATUS_DISPLAY="✅"
         fi
-        STATUS_DISPLAY+=" \`${{ needs.read-quality.outputs.coverage.status }}\`"
+        STATUS_DISPLAY+=" \`$COV_STATUS\`"
 
         cat <<EOF >> $GITHUB_STEP_SUMMARY
         ## 🔀 Auto Pull Request
@@ -452,17 +453,17 @@ jobs:
         ---
         ### 📊 Coverage
 
-        > ${{ needs.read-quality.outputs.coverage.interpretation }}
+        > ${{ fromJson(needs.read-quality.outputs.coverage).interpretation }}
 
         | Metric      | Value                                       |
         |------------ |-------------------------------------------- |
-        | Base Branch | ${{ needs.read-quality.outputs.coverage.base }}%     |
-        | Coverage    | **${{ needs.read-quality.outputs.coverage.line }}%** |
-        | Delta Δ     | ${{ needs.read-quality.outputs.coverage.delta }}     |
-        | Minimum     | ${{ needs.read-quality.outputs.coverage.min }}%      |
-        | Mode        | \`${{ needs.read-quality.outputs.coverage.mode }}\`  |
+        | Base Branch | ${{ fromJson(needs.read-quality.outputs.coverage).base }}%     |
+        | Coverage    | **${{ fromJson(needs.read-quality.outputs.coverage).line }}%** |
+        | Delta Δ     | ${{ fromJson(needs.read-quality.outputs.coverage).delta }}     |
+        | Minimum     | ${{ fromJson(needs.read-quality.outputs.coverage).min }}%      |
+        | Mode        | \`${{ fromJson(needs.read-quality.outputs.coverage).mode }}\`  |
         | Status      | $STATUS_DISPLAY                             |
-        | Reason      | \`${{ needs.read-quality.outputs.coverage.reason }}\`|
+        | Reason      | \`${{ fromJson(needs.read-quality.outputs.coverage).reason }}\`|
                 
         ---
         🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || '<failed>' }}

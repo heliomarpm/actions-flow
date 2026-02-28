@@ -82,14 +82,23 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      status: ${{ steps.quality.outputs.status }}
-      base: ${{ steps.quality.outputs.base }}
-      line: ${{ steps.quality.outputs.line }}
-      min: ${{ steps.quality.outputs.min }}
-      delta: ${{ steps.quality.outputs.delta }}
-      mode: ${{ steps.quality.outputs.mode }}
-      reason: ${{ steps.quality.outputs.reason }}
-      interpretation: ${{ steps.quality.outputs.interpretation }}
+      hasQuality: ${{ steps.quality.outputs.hasQuality }}
+      hasCoverage: ${{ steps.quality.outputs.hasCoverage }}
+      hasCommitlint: ${{ steps.quality.outputs.hasCommitlint }}
+      coverage: ${{ steps.quality.outputs.coverage }}
+      
+      # coverage.status: ${{ steps.quality.outputs.coverage.status }}
+      # coverage.base: ${{ steps.quality.outputs.coverage.base }}
+      # coverage.line: ${{ steps.quality.outputs.coverage.line }}
+      # coverage.min: ${{ steps.quality.outputs.coverage.min }}
+      # coverage.delta: ${{ steps.quality.outputs.coverage.delta }}
+      # coverage.mode: ${{ steps.quality.outputs.coverage.mode }}
+      # coverage.reason: ${{ steps.quality.outputs.coverage.reason }}
+      # coverage.interpretation: ${{ steps.quality.outputs.coverage.interpretation }}
+
+      # commit.valid: ${{ steps.quality.outputs.commit.valid || steps.fallback-commit.outputs.valid }}
+      # commit.release: ${{ steps.quality.outputs.commit.release || steps.fallback-commit.outputs.release }}
+      # commit.breaking: ${{ steps.quality.outputs.commit.breaking || steps.fallback-commit.outputs.breaking }}
 
     steps:
     - name: 🔎 Read quality check
@@ -98,41 +107,86 @@ jobs:
       with:
         github-token: ${{ secrets.GH_TOKEN }}
         script: |
-          const { owner, repo } = context.repo;
-          const sha = context.payload.workflow_run.head_sha;
+          // tenta pegar SHA de diferentes contextos 
+          const sha = context.payload?.workflow_run?.head_sha || context.payload?.pull_request?.head?.sha || context.payload?.after || context.sha; 
+
+          if (!sha) { 
+            core.setOutput("status", "missing"); 
+            console.log("⚠️ Nenhum SHA encontrado no contexto"); 
+            return; 
+          }
 
           const checks = await github.rest.checks.listForRef({
-            owner,
-            repo,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
             ref: sha
           });
 
           const check = checks.data.check_runs.find(c => c.name === "actions-flow/quality");
 
           if (!check) {
-            core.setOutput("status", "missing");
+            core.setOutput("hasQuality", false);
             return;
           }
 
           const match = check.output.text?.match(/```json\n([\s\S]*?)\n```/);
 
           if (!match) {
-            core.setOutput("status", "missing");
+            core.setOutput("hasQuality", false);
             return;
           }
 
           const data = JSON.parse(match[1]);
 
-          core.setOutput("line", data.coverage.line);
-          core.setOutput("base", data.coverage.base);
-          core.setOutput("delta", data.coverage.delta);
-          core.setOutput("min", data.coverage.minimum);
-          core.setOutput("mode", data.coverage.mode);
-          core.setOutput("status", data.coverage.status);
-          core.setOutput("reason", data.coverage.reason);
-          core.setOutput("interpretation", data.coverage.interpretation || data.coverage.reason);
+          const hasCoverage = !!(data?.coverage);
+          const hasCommit = !!(data?.commitlint);
 
-          console.log("📊 Quality Result: ", data.coverage);
+          core.setOutput("hasQuality", hasCoverage && hasCommit);
+          core.setOutput("hasCoverage", hasCoverage);
+          core.setOutput("hasCommitlint", hasCommit);
+
+          if (hasCoverage) {
+            core.setOutput("coverage", data.coverage);
+            // core.setOutput("coverage.line", data.coverage.line);
+            // core.setOutput("coverage.base", data.coverage.base);
+            // core.setOutput("coverage.delta", data.coverage.delta);
+            // core.setOutput("coverage.min", data.coverage.minimum);
+            // core.setOutput("coverage.mode", data.coverage.mode);
+            // core.setOutput("coverage.status", data.coverage.status);
+            // core.setOutput("coverage.reason", data.coverage.reason);
+            // core.setOutput("coverage.interpretation", data.coverage.interpretation || data.coverage.reason);
+          }
+
+          if (hasCommit) {
+            core.setOutput("commitlint", data.commitlint);
+            // # core.setOutput("commit.valid", data.commitlint.commit.valid);
+            // # core.setOutput("commit.release", data.commitlint.commit.release);
+            // # core.setOutput("commit.breaking", data.commitlint.commit.breaking);
+          }
+
+          console.log("📊 Quality Result: ", data);
+
+    - name: 🧠 Fallback commit validation
+      if: steps.quality.outputs.hasCommit == 'false'
+      id: fallback-commit
+      run: |
+        chmod +x "$REUSABLE_PATH/scripts/shared/validate-commits.sh"
+        RESULT=$("$REUSABLE_PATH/scripts/shared/validate-commits.sh")
+        echo "$RESULT" > commit.json
+        echo "valid=$(jq -r .valid commit.json)" >> $GITHUB_OUTPUT
+
+    # - name: 🧠 Fallback coverage validation
+    #   if: steps.quality.outputs.hasCoverage == 'false'
+    #   id: fallback-coverage
+    #   run: |
+    #     echo "line=0" >> $GITHUB_OUTPUT
+    #     echo "base=0" >> $GITHUB_OUTPUT
+
+    # - name: 🚫 Block Strict Mode
+    #   if: inputs.commit_strict_mode == true && (steps.quality.outputs.valid == '0' || steps.fallback-commit.outputs.valid == '0')
+    #   run: |
+    #     echo "❌ Invalid commit messages detected"
+    #     exit 1
 
   auto-pr:
     needs:
@@ -215,12 +269,12 @@ jobs:
 
     - name: 📝 Generate PR body
       if: needs.resolve-branch.outputs.skip != 'true'
-      working-directory: ${{ steps.path.outputs.value }}
+      # working-directory: ${{ steps.path.outputs.value }}
       run: |
-        log "Cobertura: ${{ needs.read-quality.outputs.interpretation }}"
+        log "Cobertura: ${{ needs.read-quality.outputs.coverage.interpretation }}"
 
         if [ -n "${{ inputs.pr_body_path }}" ]; then
-          PR_BODY_PATH="${{ steps.path.outputs.value }}/${{ inputs.pr_body_path }}"
+          PR_BODY_PATH="${{ inputs.pr_body_path }}"
           log "Usando atributo \`pr_body_path\`: $PR_BODY_PATH"
 
           if [ ! -f "$PR_BODY_PATH" ]; then
@@ -238,7 +292,7 @@ jobs:
         fi
 
         COVERAGE_BLOCK="missing"
-        COV_LINE="${{ needs.read-quality.outputs.line }}"
+        COV_LINE="${{ needs.read-quality.outputs.coverage.line }}"
 
         # Verifica se o template contém a chave para bloco de qualidade
         if [[ "$PR_TEMPLATE" == *"{{QUALITY_GATE_RESULT}}"* ]]; then
@@ -255,14 +309,14 @@ jobs:
         log "COVERAGE_BLOCK: $COVERAGE_BLOCK"
 
         if [ "$COVERAGE_BLOCK" = "found" ]; then
-          COV_BASE="${{ needs.read-quality.outputs.base }}"
-          COV_LINE="${{ needs.read-quality.outputs.line }}"
-          COV_DELTA="${{ needs.read-quality.outputs.delta }}"
-          COV_MIN="${{ needs.read-quality.outputs.min }}"
-          COV_STATUS="${{ needs.read-quality.outputs.status }}"
-          COV_MODE="${{ needs.read-quality.outputs.mode }}"
-          COV_REASON="${{ needs.read-quality.outputs.reason }}"
-          COV_INTERPRETATION="${{ needs.read-quality.outputs.interpretation }}"
+          COV_BASE="${{ needs.read-quality.outputs.coverage.base }}"
+          COV_LINE="${{ needs.read-quality.outputs.coverage.line }}"
+          COV_DELTA="${{ needs.read-quality.outputs.coverage.delta }}"
+          COV_MIN="${{ needs.read-quality.outputs.coverage.min }}"
+          COV_STATUS="${{ needs.read-quality.outputs.coverage.status }}"
+          COV_MODE="${{ needs.read-quality.outputs.coverage.mode }}"
+          COV_REASON="${{ needs.read-quality.outputs.coverage.reason }}"
+          COV_INTERPRETATION="${{ needs.read-quality.outputs.coverage.interpretation }}"
 
           if [ "$COV_STATUS" = "passed" ]; then
             STATUS_DISPLAY="✅"
@@ -327,7 +381,7 @@ jobs:
         TITLE=${TITLE//\{\{HEAD_BRANCH\}\}/$HEAD}
         TITLE=${TITLE//\{\{BASE_BRANCH\}\}/$BASE}
 
-        STATUS_COVERAGE="${{ needs.read-quality.outputs.status }}"
+        STATUS_COVERAGE="${{ needs.read-quality.outputs.coverage.status }}"
         if [ "$STATUS_COVERAGE" = "failed" ]; then
           ADD_LABEL="coverage-failed"
           DEL_LABEL="coverage-passed,coverage-missing"
@@ -378,12 +432,12 @@ jobs:
     - name: 🧾 Job Summary
       if: always()
       run: |
-        if [ "${{ needs.read-quality.outputs.status }}" = "failed" ]; then
+        if [ "${{ needs.read-quality.outputs.coverage.status }}" = "failed" ]; then
           STATUS_DISPLAY="❌"
         else
           STATUS_DISPLAY="✅"
         fi
-        STATUS_DISPLAY+=" \`${{ needs.read-quality.outputs.status }}\`"
+        STATUS_DISPLAY+=" \`${{ needs.read-quality.outputs.coverage.status }}\`"
 
         cat <<EOF >> $GITHUB_STEP_SUMMARY
         ## 🔀 Auto Pull Request
@@ -396,17 +450,17 @@ jobs:
         ---
         ### 📊 Coverage
 
-        > ${{ needs.read-quality.outputs.interpretation }}
+        > ${{ needs.read-quality.outputs.coverage.interpretation }}
 
         | Metric      | Value                                       |
         |------------ |-------------------------------------------- |
-        | Base Branch | ${{ needs.read-quality.outputs.base }}%     |
-        | Coverage    | **${{ needs.read-quality.outputs.line }}%** |
-        | Delta Δ     | ${{ needs.read-quality.outputs.delta }}     |
-        | Minimum     | ${{ needs.read-quality.outputs.min }}%      |
-        | Mode        | \`${{ needs.read-quality.outputs.mode }}\`  |
+        | Base Branch | ${{ needs.read-quality.outputs.coverage.base }}%     |
+        | Coverage    | **${{ needs.read-quality.outputs.coverage.line }}%** |
+        | Delta Δ     | ${{ needs.read-quality.outputs.coverage.delta }}     |
+        | Minimum     | ${{ needs.read-quality.outputs.coverage.min }}%      |
+        | Mode        | \`${{ needs.read-quality.outputs.coverage.mode }}\`  |
         | Status      | $STATUS_DISPLAY                             |
-        | Reason      | \`${{ needs.read-quality.outputs.reason }}\`|
+        | Reason      | \`${{ needs.read-quality.outputs.coverage.reason }}\`|
                 
         ---
         🔗 **PR:** ${{ steps.create-pr.outputs.pr_url || '<failed>' }}

@@ -82,7 +82,7 @@ jobs:
     - name: 📌 Checkout consumer repository
       uses: actions/checkout@v4
       with: 
-        token: ${{ inputs.project_private && secrets.GH_TOKEN || github.token }}
+        token: ${{ secrets.GH_TOKEN || github.token }}
 
     - name: 📌 Checkout reusable repository
       uses: actions/checkout@v4

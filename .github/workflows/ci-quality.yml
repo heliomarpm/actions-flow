@@ -311,7 +311,7 @@ jobs:
         github-token: ${{ github.token }}
         script: |
           const fs = require('fs');
-          const result = JSON.parse(fs.readFileSync(${{env.QUALITY_FILE}}, 'utf8'));
+          const result = JSON.parse(fs.readFileSync(process.env.QUALITY_FILE, 'utf8'));
                 
           const coverageFailed = result.coverage.mode !== "info" && result.coverage.status === "failed";
           const commitFailed = result.commitlint.commit.valid === false;
